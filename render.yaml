@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: greengrid-backend
+    runtime: java
+    rootDir: backend
+
+    buildCommand: mvn clean package
+
+    startCommand: java -jar target/greengrid-backend-1.0.0.jar
+
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_USERNAME
+        sync: false
+      - key: DATABASE_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: TOKEN_ENCRYPTION_KEY
+        sync: false
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: GITHUB_REDIRECT_URI
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
