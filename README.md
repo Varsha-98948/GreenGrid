@@ -1,56 +1,237 @@
-# GreenGrid
+# 🌿 GreenGrid
 
-A Git-based developer learning platform: organize the coding problems you solve, and push each one as a real commit to your own GitHub repository.
+> **A Git-powered coding journal that transforms every solved problem into a structured GitHub repository.**
+
+GreenGrid is a full-stack developer platform that helps programmers organize, track, and version-control their coding journey. Instead of storing solutions in scattered folders or online judges, GreenGrid automatically structures every solved problem and syncs it to GitHub, creating a clean, searchable, and portfolio-worthy repository.
+
+---
+
+## ✨ Features
+
+### 📚 Problem Management
+- Save coding problems from any platform
+- Rich code editor with syntax highlighting
+- Notes, observations, and learning points
+- Time & space complexity tracking
+- Favorite important problems
+- Custom tags and categorization
+
+### 🐙 GitHub Integration
+- Secure GitHub OAuth authentication
+- Connect an existing repository or create a new one
+- Automatic repository synchronization
+- Structured folder organization
+- Commit history for every solved problem
+
+### 📊 Dashboard & Analytics
+- Daily progress tracking
+- Current & longest solving streaks
+- GitHub-style contribution calendar
+- Difficulty distribution
+- Topic-wise breakdown
+- Programming language usage
+- Recent activity overview
+
+### 🔍 Search & Revision
+- Powerful filtering
+- Search by title, tag, language, or difficulty
+- Revision status tracking
+- Bookmark important questions
+
+### 🎨 Modern Interface
+- Responsive design
+- Dark theme
+- Monaco Code Editor
+- Smooth animations
+- Clean dashboard experience
+
+---
+
+# 🏗️ Tech Stack
+
+## Backend
+
+- Java 21
+- Spring Boot 3
+- Spring Security
+- Spring Data JPA
+- PostgreSQL
+- Flyway
+- JWT Authentication
+- GitHub OAuth
+- Maven
+
+## Frontend
+
+- HTML5
+- CSS3
+- Vanilla JavaScript
+- Bootstrap 5
+- Monaco Editor
+
+## APIs
+
+- GitHub REST API
+- GitHub OAuth
+
+---
+
+# 📁 Project Structure
 
 ```
-greengrid/
-├── backend/    Java 21 · Spring Boot 3 · PostgreSQL (Supabase) · JWT + GitHub OAuth
-└── frontend/   HTML · CSS · Vanilla JS · Bootstrap 5 · Monaco Editor
+GreenGrid
+│
+├── backend
+│   ├── src
+│   ├── pom.xml
+│   └── ...
+│
+├── frontend
+│   ├── css
+│   ├── js
+│   ├── assets
+│   └── index.html
+│
+└── README.md
 ```
 
-## Quick start
+---
 
-**1. Database** — create a Supabase Postgres project (or run Postgres locally). Flyway will create the schema automatically on first boot.
+# 🚀 Getting Started
 
-**2. Backend**
+## Clone the Repository
+
 ```bash
-cd greengrid-backend
-export DATABASE_URL=jdbc:postgresql://<host>:5432/<db>
-export DATABASE_USERNAME=...
-export DATABASE_PASSWORD=...
-export JWT_SECRET=$(openssl rand -base64 48)
-export TOKEN_ENCRYPTION_KEY=$(openssl rand -base64 32)
-export GITHUB_CLIENT_ID=...
-export GITHUB_CLIENT_SECRET=...
-export GITHUB_REDIRECT_URI=http://localhost:8080/api/github/oauth/callback
-export FRONTEND_URL=http://localhost:5173
-mvn spring-boot:run
+git clone https://github.com/YOUR_USERNAME/GreenGrid.git
+cd GreenGrid
 ```
 
-You'll need a GitHub OAuth App (GitHub → Settings → Developer settings → OAuth Apps) with its
-**Authorization callback URL** set to exactly `GITHUB_REDIRECT_URI` above.
+---
 
-**3. Frontend**
+## Backend Setup
+
+Navigate to the backend directory.
+
 ```bash
-cd greengrid-frontend
-# edit js/config.js -> apiBaseUrl if not using localhost:8080
-npx serve .   # or any static file server
+cd backend
 ```
 
-## What's implemented
+Configure your environment variables.
 
-All 8 modules from the build plan are here: project foundation, JWT + GitHub OAuth security,
-GitHub commit integration (via the Contents API), the save/commit/push workflow with LeetCode
-auto-fetch, dashboard analytics (streaks, breakdowns, contribution calendar), multi-field search
-with a revision tracker, account settings, and the full frontend.
+```properties
+DATABASE_URL=
+DATABASE_USERNAME=
+DATABASE_PASSWORD=
 
-## Known gaps / what to check before treating this as production-ready
+JWT_SECRET=
+TOKEN_ENCRYPTION_KEY=
 
-Being direct about this, since it matters:
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+GITHUB_REDIRECT_URI=
 
-- **Not compiled or run.** This sandbox has no access to Maven Central, so `mvn compile` / `mvn test` have not actually been executed against this code. I checked brace/paren balance and reviewed every file by hand, but you should run a real build before deploying.
-- **No automated tests.** None were written — I'd suggest starting with `ProblemService`, `StreakCalculator`, `TokenEncryptionService`, and `ProblemSpecifications`, since they carry the most logic.
-- **Rate limiting** isn't implemented on auth endpoints — add it (e.g. bucket4j or a gateway-level limiter) before going live.
-- **GitHub API pagination**: `listRepositoriesForAuthenticatedUser` fetches one page of 100 repos; a user with more won't see the rest without adding pagination.
-- **Refresh token rotation**: refresh tokens are currently stateless JWTs, not stored/revocable server-side. Fine for a first version; add a revocation list (or move to opaque refresh tokens in the DB) if you need to support "log out everywhere" or token theft response.
-- **Email delivery** (verification, password reset) isn't built — there's no flow for either yet.
+FRONTEND_URL=
+```
+
+Run the application.
+
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
+Flyway will automatically create the database schema during startup.
+
+---
+
+## Frontend Setup
+
+Navigate to the frontend directory.
+
+```bash
+cd frontend
+```
+
+Update the backend URL inside:
+
+```
+js/config.js
+```
+
+Run any static web server.
+
+Example:
+
+```bash
+python -m http.server 5500
+```
+
+or
+
+```bash
+npx serve .
+```
+
+---
+
+# 🔒 Security
+
+GreenGrid follows several security best practices:
+
+- JWT Authentication
+- GitHub OAuth 2.0
+- AES Encryption for GitHub Access Tokens
+- Password Hashing (BCrypt)
+- Spring Security
+- Protected REST APIs
+- Database validation using Flyway migrations
+
+---
+
+# 🛣️ Roadmap
+
+## ✅ Version 1
+
+- User Authentication
+- GitHub OAuth
+- Repository Management
+- Problem Management
+- Dashboard
+- Search & Filters
+- Contribution Calendar
+- Revision Tracker
+
+## 🚧 Planned Improvements
+
+- Single Git commit per problem (Git Data API)
+- AI-generated solution summaries
+- AI hints
+- Multi-platform import (LeetCode, Codeforces, GFG)
+- Daily challenge reminders
+- Repository statistics
+- Team workspaces
+- Public profile pages
+
+---
+
+# 🤝 Contributing
+
+Contributions, suggestions, and feature requests are welcome.
+
+If you'd like to improve GreenGrid:
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Open a Pull Request
+
+---
+
+# 👩‍💻 Author
+
+**Varsha Jairam**
+
+GitHub: https://github.com/Varsha-98948
+
+---
+
+> **GreenGrid aims to make every solved problem part of your developer portfolio—not just another submission.**
