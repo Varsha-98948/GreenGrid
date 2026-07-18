@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign up — GreenGrid</title>
+<link href="css/styles.css" rel="stylesheet">
+</head>
+<body>
+
+<div class="gg-auth-wrap">
+  <div class="commit-grid-bg" id="bg-grid"></div>
+  <div class="gg-auth-card">
+    <div class="gg-logo mb-1" style="padding:0 0 8px;">
+      <span class="gg-logo-mark"><span></span><span></span><span></span><span></span></span>
+      GreenGrid
+    </div>
+    <h4 class="mb-1">Create your account</h4>
+    <p class="text-muted-gg mb-4" style="font-size:.9rem;">Your problems. Your repo. Your commits.</p>
+
+    <form id="register-form">
+      <label class="form-label-gg">Name</label>
+      <input type="text" class="form-control-gg mb-3" id="displayName" required placeholder="Ada Lovelace">
+
+      <label class="form-label-gg">Email</label>
+      <input type="email" class="form-control-gg mb-3" id="email" required placeholder="you@example.com">
+
+      <label class="form-label-gg">Password</label>
+      <input type="password" class="form-control-gg mb-1" id="password" required minlength="8" placeholder="At least 8 characters">
+      <p class="text-muted-gg mb-3" style="font-size:.76rem;">Minimum 8 characters.</p>
+
+      <button type="submit" class="btn btn-gg-primary w-100 mb-3" id="submit-btn">Create account</button>
+    </form>
+
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <hr class="flex-grow-1 gg-divider m-0"><span class="text-muted-gg" style="font-size:.78rem;">or</span><hr class="flex-grow-1 gg-divider m-0">
+    </div>
+
+    <button class="btn btn-gg-outline w-100 mb-4" id="github-login-btn">
+      Continue with GitHub
+    </button>
+
+    <p class="text-center text-muted-gg mb-0" style="font-size:.85rem;">
+      Already have an account? <a href="/login.html">Log in</a>
+    </p>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/toast.js"></script>
+<script>
+  if (GGAuth.isAuthenticated()) window.location.href = '/dashboard.html';
+
+  const grid = document.getElementById('bg-grid');
+  for (let i = 0; i < 96; i++) {
+    const cell = document.createElement('span');
+    const r = Math.random();
+    if (r > 0.88) cell.className = 'lit-2';
+    else if (r > 0.7) cell.className = 'lit-1';
+    grid.appendChild(cell);
+  }
+
+  document.getElementById('register-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Creating account…';
+    try {
+      const res = await GGApi.post('/api/auth/register', {
+        displayName: document.getElementById('displayName').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value,
+      });
+      GGAuth.setSession(res.data);
+      window.location.href = '/onboarding.html';
+    } catch (err) {
+      GGToast.error(err);
+      btn.disabled = false;
+      btn.textContent = 'Create account';
+    }
+  });
+
+  document.getElementById('github-login-btn').addEventListener('click', async () => {
+    try {
+      const res = await fetch(`${GG_API_BASE}/api/auth/github/login-url`).then(r => r.json());
+      window.location.href = res.data.authorizeUrl;
+    } catch (err) {
+      GGToast.error(err);
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings — GreenGrid</title>
+<link href="css/styles.css" rel="stylesheet">
+</head>
+<body>
+
+<div id="gg-page">
+  <h3 class="mb-4">Settings</h3>
+
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <div class="gg-card mb-3">
+        <h6 class="mb-3">Account</h6>
+        <div class="mb-2"><span class="text-muted-gg" style="font-size:.8rem;">Name</span><div id="acc-name">—</div></div>
+        <div class="mb-0"><span class="text-muted-gg" style="font-size:.8rem;">Email</span><div id="acc-email" class="mono" style="font-size:.9rem;">—</div></div>
+      </div>
+
+      <div class="gg-card mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="mb-0">GitHub Connection</h6>
+          <span class="badge-gg badge-neutral" id="github-badge">checking…</span>
+        </div>
+        <p class="text-muted-gg mb-3" style="font-size:.85rem;" id="github-detail"></p>
+        <button class="btn btn-gg-outline" id="reconnect-btn">Reconnect GitHub</button>
+      </div>
+
+      <div class="gg-card mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="mb-0">Repository</h6>
+        </div>
+        <p class="text-muted-gg mb-3" style="font-size:.85rem;" id="repo-detail">Loading…</p>
+        <a href="/onboarding.html" class="btn btn-gg-outline">Change Repository</a>
+      </div>
+
+      <div class="gg-card mb-3">
+        <h6 class="mb-3">Appearance</h6>
+        <div class="d-flex gap-2">
+          <button class="btn btn-gg-outline" id="theme-dark-btn">Dark</button>
+          <button class="btn btn-gg-outline" id="theme-light-btn">Light</button>
+        </div>
+      </div>
+
+      <div class="gg-card mb-3">
+        <h6 class="mb-3">Export Data</h6>
+        <p class="text-muted-gg mb-3" style="font-size:.85rem;">Download every problem you've saved as a JSON file.</p>
+        <button class="btn btn-gg-outline" id="export-btn">Export as JSON</button>
+      </div>
+
+      <div class="gg-card" style="border-color: var(--danger);">
+        <h6 class="mb-2" style="color: var(--danger);">Danger Zone</h6>
+        <p class="text-muted-gg mb-3" style="font-size:.85rem;">
+          Deletes your GreenGrid account and all saved data. Your GitHub repository and its commit history are never touched.
+        </p>
+        <button class="btn btn-gg-danger" id="delete-account-btn">Delete Account</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/toast.js"></script>
+<script src="js/shell.js"></script>
+<script>
+  GGShell.render('settings');
+
+  const currentTheme = localStorage.getItem('gg_theme') || 'dark';
+  function highlightThemeBtn() {
+    document.getElementById('theme-dark-btn').classList.toggle('active', currentTheme === 'dark');
+    document.getElementById('theme-light-btn').classList.toggle('active', currentTheme === 'light');
+  }
+  highlightThemeBtn();
+
+  async function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('gg_theme', theme);
+    try { await GGApi.patch('/api/settings/theme', { theme }); } catch {}
+  }
+  document.getElementById('theme-dark-btn').addEventListener('click', () => { setTheme('dark'); location.reload(); });
+  document.getElementById('theme-light-btn').addEventListener('click', () => { setTheme('light'); location.reload(); });
+
+  async function loadAccount() {
+    try {
+      const res = await GGApi.get('/api/settings/account');
+      const a = res.data;
+      document.getElementById('acc-name').textContent = a.displayName;
+      document.getElementById('acc-email').textContent = a.email;
+
+      const badge = document.getElementById('github-badge');
+      if (a.githubConnected) {
+        badge.textContent = 'Connected';
+        badge.className = 'badge-gg badge-status-committed';
+        document.getElementById('github-detail').textContent = `Connected as @${a.githubUsername}`;
+      } else {
+        badge.textContent = 'Not connected';
+        badge.className = 'badge-gg badge-status-failed';
+        document.getElementById('github-detail').textContent = 'Connect your GitHub account to start committing solutions.';
+      }
+
+      document.getElementById('repo-detail').textContent = a.repositoryConnected
+        ? `Active repository: ${a.repositoryFullName}`
+        : 'No repository selected yet.';
+    } catch (err) {
+      GGToast.error(err);
+    }
+  }
+
+  document.getElementById('reconnect-btn').addEventListener('click', async () => {
+    try {
+      const res = await GGApi.get('/api/github/oauth/connect-url');
+      window.location.href = res.data.authorizeUrl;
+    } catch (err) { GGToast.error(err); }
+  });
+
+  document.getElementById('export-btn').addEventListener('click', async () => {
+    try {
+      const res = await GGApi.get('/api/settings/export');
+      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'greengrid-export.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) { GGToast.error(err); }
+  });
+
+  document.getElementById('delete-account-btn').addEventListener('click', async () => {
+    if (!confirm('This permanently deletes your GreenGrid account and all saved problems. This cannot be undone. Continue?')) return;
+    try {
+      await GGApi.delete('/api/settings/account');
+      GGAuth.clearSession();
+      window.location.href = '/index.html';
+    } catch (err) { GGToast.error(err); }
+  });
+
+  loadAccount();
+</script>
+</body>
+</html>

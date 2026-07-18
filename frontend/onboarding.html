@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Set up GreenGrid</title>
+<link href="css/styles.css" rel="stylesheet">
+</head>
+<body>
+
+<div class="gg-auth-wrap" style="align-items:flex-start; padding-top: 64px;">
+  <div class="commit-grid-bg" id="bg-grid"></div>
+  <div class="gg-auth-card" style="max-width: 520px;">
+    <div class="gg-logo mb-1" style="padding:0 0 8px;">
+      <span class="gg-logo-mark"><span></span><span></span><span></span><span></span></span>
+      GreenGrid
+    </div>
+
+    <div class="d-flex align-items-center gap-2 mb-4">
+      <div class="badge-gg" id="step-badge-1" style="background: var(--accent-soft); color: var(--accent);">1. Connect GitHub</div>
+      <div style="width:16px;height:1px;background:var(--border);"></div>
+      <div class="badge-gg badge-neutral" id="step-badge-2">2. Choose repository</div>
+    </div>
+
+    <!-- Step 1 -->
+    <div id="step-1">
+      <h5 class="mb-2">Connect your GitHub account</h5>
+      <p class="text-secondary-gg mb-4" style="font-size:.9rem;">
+        GreenGrid needs permission to create commits in a repository on your behalf.
+        We only ever touch the one repository you choose next.
+      </p>
+      <button class="btn btn-gg-primary w-100" id="connect-github-btn">Connect GitHub</button>
+    </div>
+
+    <!-- Step 2 -->
+    <div id="step-2" style="display:none;">
+      <h5 class="mb-2">Where should solutions live?</h5>
+      <p class="text-secondary-gg mb-4" style="font-size:.9rem;">Create a fresh repository, or use one you already have.</p>
+
+      <ul class="nav nav-pills mb-3" style="gap:8px;">
+        <li class="nav-item">
+          <button class="btn btn-gg-outline active" id="tab-create" style="font-size:.85rem;">Create new</button>
+        </li>
+        <li class="nav-item">
+          <button class="btn btn-gg-outline" id="tab-existing" style="font-size:.85rem;">Use existing</button>
+        </li>
+      </ul>
+
+      <div id="panel-create">
+        <label class="form-label-gg">Repository name</label>
+        <input type="text" class="form-control-gg mb-3" id="repo-name" placeholder="leetcode-solutions" value="coding-problems">
+        <div class="form-check mb-4">
+          <input class="form-check-input" type="checkbox" id="repo-private">
+          <label class="form-check-label text-secondary-gg" for="repo-private" style="font-size:.88rem;">Make it private</label>
+        </div>
+        <button class="btn btn-gg-primary w-100" id="create-repo-btn">Create & continue</button>
+      </div>
+
+      <div id="panel-existing" style="display:none;">
+        <div id="repo-list" class="mb-3" style="max-height: 280px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
+          <p class="text-muted-gg" style="font-size:.85rem;">Loading your repositories…</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/toast.js"></script>
+<script>
+  GGAuth.requireAuth();
+
+  const grid = document.getElementById('bg-grid');
+  for (let i = 0; i < 96; i++) {
+    const cell = document.createElement('span');
+    const r = Math.random();
+    if (r > 0.88) cell.className = 'lit-2'; else if (r > 0.7) cell.className = 'lit-1';
+    grid.appendChild(cell);
+  }
+
+  const step1 = document.getElementById('step-1');
+  const step2 = document.getElementById('step-2');
+  const badge1 = document.getElementById('step-badge-1');
+  const badge2 = document.getElementById('step-badge-2');
+
+  function showStep2() {
+    step1.style.display = 'none';
+    step2.style.display = 'block';
+    badge1.className = 'badge-gg badge-neutral';
+    badge2.className = 'badge-gg';
+    badge2.style.background = 'var(--accent-soft)';
+    badge2.style.color = 'var(--accent)';
+  }
+
+  async function init() {
+    const params = new URLSearchParams(window.location.search);
+    try {
+      const status = await GGApi.get('/api/github/status');
+      if (status.data.connected || params.get('github') === 'connected') {
+        showStep2();
+        loadExistingRepos();
+      }
+    } catch (err) {
+      GGToast.error(err);
+    }
+  }
+
+  document.getElementById('connect-github-btn').addEventListener('click', async () => {
+    try {
+      const res = await GGApi.get('/api/github/oauth/connect-url');
+      window.location.href = res.data.authorizeUrl;
+    } catch (err) {
+      GGToast.error(err);
+    }
+  });
+
+  const tabCreate = document.getElementById('tab-create');
+  const tabExisting = document.getElementById('tab-existing');
+  const panelCreate = document.getElementById('panel-create');
+  const panelExisting = document.getElementById('panel-existing');
+
+  tabCreate.addEventListener('click', () => {
+    tabCreate.classList.add('active'); tabExisting.classList.remove('active');
+    panelCreate.style.display = 'block'; panelExisting.style.display = 'none';
+  });
+  tabExisting.addEventListener('click', () => {
+    tabExisting.classList.add('active'); tabCreate.classList.remove('active');
+    panelExisting.style.display = 'block'; panelCreate.style.display = 'none';
+  });
+
+  document.getElementById('create-repo-btn').addEventListener('click', async (e) => {
+    const btn = e.target;
+    const name = document.getElementById('repo-name').value.trim();
+    if (!name) { GGToast.error({ message: 'Please enter a repository name' }); return; }
+    btn.disabled = true; btn.textContent = 'Creating…';
+    try {
+      await GGApi.post('/api/github/repos/create', {
+        name, isPrivate: document.getElementById('repo-private').checked,
+      });
+      finishOnboarding();
+    } catch (err) {
+      GGToast.error(err);
+      btn.disabled = false; btn.textContent = 'Create & continue';
+    }
+  });
+
+  async function loadExistingRepos() {
+    const listEl = document.getElementById('repo-list');
+    try {
+      const res = await GGApi.get('/api/github/repos');
+      if (res.data.length === 0) {
+        listEl.innerHTML = '<p class="text-muted-gg" style="font-size:.85rem;">No repositories found on your GitHub account.</p>';
+        return;
+      }
+      listEl.innerHTML = res.data.map(r => `
+        <button class="gg-card gg-card-tight text-start repo-pick-btn" data-owner="${r.owner}" data-name="${r.name}"
+                style="cursor:pointer; border-color: var(--border);">
+          <div class="d-flex justify-content-between align-items-center">
+            <span style="font-weight:600; font-size:.9rem;">${r.fullName}</span>
+            ${r.isPrivate ? '<span class="badge-gg badge-neutral">Private</span>' : ''}
+          </div>
+        </button>
+      `).join('');
+      document.querySelectorAll('.repo-pick-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          try {
+            await GGApi.post('/api/github/repos/use-existing', { owner: btn.dataset.owner, name: btn.dataset.name });
+            finishOnboarding();
+          } catch (err) {
+            GGToast.error(err);
+            btn.disabled = false;
+          }
+        });
+      });
+    } catch (err) {
+      listEl.innerHTML = '<p class="text-muted-gg" style="font-size:.85rem;">Could not load repositories.</p>';
+    }
+  }
+
+  function finishOnboarding() {
+    GGAuth.updateOnboardingCompleted(true);
+    GGToast.success('Repository connected!');
+    window.location.href = '/dashboard.html';
+  }
+
+  init();
+</script>
+</body>
+</html>

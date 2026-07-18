@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Search — GreenGrid</title>
+<link href="css/styles.css" rel="stylesheet">
+</head>
+<body>
+
+<div id="gg-page">
+  <h3 class="mb-4">Search Problems</h3>
+
+  <div class="gg-card mb-4">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label-gg">Title</label>
+        <input type="text" class="form-control-gg" id="f-title" placeholder="Two Sum">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label-gg">Topic</label>
+        <input type="text" class="form-control-gg" id="f-topic" placeholder="Dynamic Programming">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label-gg">Difficulty</label>
+        <select class="form-select-gg" id="f-difficulty">
+          <option value="">Any</option>
+          <option value="EASY">Easy</option>
+          <option value="MEDIUM">Medium</option>
+          <option value="HARD">Hard</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label-gg">Language</label>
+        <input type="text" class="form-control-gg" id="f-language" placeholder="Java">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label-gg">Platform</label>
+        <input type="text" class="form-control-gg" id="f-platform" placeholder="LeetCode">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label-gg">Solved Date</label>
+        <input type="date" class="form-control-gg" id="f-date">
+      </div>
+      <div class="col-md-3 d-flex align-items-end">
+        <button class="btn btn-gg-primary w-100" id="search-btn">Search</button>
+      </div>
+      <div class="col-md-3 d-flex align-items-end">
+        <button class="btn btn-gg-outline w-100" id="clear-btn">Clear filters</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="results"></div>
+  <div class="d-flex justify-content-between align-items-center mt-3" id="pagination" style="display:none !important;">
+    <button class="btn btn-gg-outline" id="prev-btn">Previous</button>
+    <span class="text-muted-gg mono" id="page-label" style="font-size:.82rem;"></span>
+    <button class="btn btn-gg-outline" id="next-btn">Next</button>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/toast.js"></script>
+<script src="js/shell.js"></script>
+<script>
+  GGShell.render('search');
+
+  let currentPage = 0;
+  let totalPages = 1;
+
+  function buildQuery() {
+    const params = new URLSearchParams();
+    const title = document.getElementById('f-title').value.trim();
+    const topic = document.getElementById('f-topic').value.trim();
+    const difficulty = document.getElementById('f-difficulty').value;
+    const language = document.getElementById('f-language').value.trim();
+    const platform = document.getElementById('f-platform').value.trim();
+    const date = document.getElementById('f-date').value;
+
+    if (title) params.set('title', title);
+    if (topic) params.set('topic', topic);
+    if (difficulty) params.set('difficulty', difficulty);
+    if (language) params.set('language', language);
+    if (platform) params.set('platform', platform);
+    if (date) params.set('date', date);
+    params.set('page', currentPage);
+    params.set('size', 12);
+    return params.toString();
+  }
+
+  const DIFF_BADGE = { EASY: 'badge-easy', MEDIUM: 'badge-medium', HARD: 'badge-hard' };
+
+  async function search() {
+    const resultsEl = document.getElementById('results');
+    resultsEl.innerHTML = '<p class="text-muted-gg">Searching…</p>';
+    try {
+      const res = await GGApi.get('/api/problems/search?' + buildQuery());
+      const page = res.data;
+      totalPages = page.totalPages;
+
+      if (page.content.length === 0) {
+        resultsEl.innerHTML = '<div class="gg-card text-center py-5"><p class="text-muted-gg mb-0">No problems match these filters.</p></div>';
+        document.getElementById('pagination').style.setProperty('display', 'none', 'important');
+        return;
+      }
+
+      resultsEl.innerHTML = page.content.map(renderCard).join('');
+      bindCardActions();
+
+      document.getElementById('pagination').style.setProperty('display', 'flex', 'important');
+      document.getElementById('page-label').textContent = `page ${currentPage + 1} of ${totalPages}`;
+      document.getElementById('prev-btn').disabled = currentPage === 0;
+      document.getElementById('next-btn').disabled = currentPage >= totalPages - 1;
+    } catch (err) {
+      GGToast.error(err);
+    }
+  }
+
+  function renderCard(p) {
+    const revisionOptions = ['NONE', 'NEEDS_REVISION', 'MASTERED'];
+    return `
+    <div class="gg-card mb-3" data-id="${p.id}">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <h6 class="mb-0">${p.title}</h6>
+            <span class="badge-gg ${DIFF_BADGE[p.difficulty]}">${p.difficulty}</span>
+            ${p.favorite ? '<span title="Favorite">⭐</span>' : ''}
+          </div>
+          <div class="text-muted-gg mono" style="font-size:.78rem;">${p.platform} · ${p.language} · ${p.solvedDate}</div>
+          <div class="mt-2 d-flex flex-wrap gap-1">
+            ${p.topics.map(t => `<span class="badge-gg badge-neutral">${t}</span>`).join('')}
+          </div>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+          <span class="badge-gg badge-status-${p.commitStatus.toLowerCase()}">${p.commitStatus}</span>
+          <button class="btn-gg-icon fav-btn" title="Toggle favorite">${p.favorite ? '★' : '☆'}</button>
+          <button class="btn-gg-icon delete-btn" title="Delete">✕</button>
+        </div>
+      </div>
+      <div class="mt-3 d-flex align-items-center gap-2">
+        <label class="text-muted-gg" style="font-size:.78rem;">Revision:</label>
+        <select class="form-select-gg revision-select" style="width:auto; padding:5px 10px; font-size:.82rem;">
+          ${revisionOptions.map(o => `<option value="${o}" ${p.revisionStatus === o ? 'selected' : ''}>${o.replace('_', ' ')}</option>`).join('')}
+        </select>
+        ${p.problemUrl ? `<a href="${p.problemUrl}" target="_blank" class="text-muted-gg" style="font-size:.8rem; margin-left:auto;">View problem ↗</a>` : ''}
+      </div>
+    </div>`;
+  }
+
+  function bindCardActions() {
+    document.querySelectorAll('.revision-select').forEach(sel => {
+      sel.addEventListener('change', async () => {
+        const id = sel.closest('[data-id]').dataset.id;
+        try {
+          await GGApi.patch(`/api/problems/${id}/revision`, { revisionStatus: sel.value });
+          GGToast.success('Updated');
+        } catch (err) { GGToast.error(err); }
+      });
+    });
+    document.querySelectorAll('.fav-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const card = btn.closest('[data-id]');
+        const id = card.dataset.id;
+        const nowFav = btn.textContent.trim() === '☆';
+        try {
+          await GGApi.patch(`/api/problems/${id}/revision`, { favorite: nowFav });
+          search();
+        } catch (err) { GGToast.error(err); }
+      });
+    });
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.closest('[data-id]').dataset.id;
+        if (!confirm('Delete this problem from GreenGrid? (Your GitHub commit history is not affected.)')) return;
+        try {
+          await GGApi.delete(`/api/problems/${id}`);
+          GGToast.success('Deleted');
+          search();
+        } catch (err) { GGToast.error(err); }
+      });
+    });
+  }
+
+  document.getElementById('search-btn').addEventListener('click', () => { currentPage = 0; search(); });
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    ['f-title','f-topic','f-difficulty','f-language','f-platform','f-date'].forEach(id => document.getElementById(id).value = '');
+    currentPage = 0; search();
+  });
+  document.getElementById('prev-btn').addEventListener('click', () => { if (currentPage > 0) { currentPage--; search(); } });
+  document.getElementById('next-btn').addEventListener('click', () => { if (currentPage < totalPages - 1) { currentPage++; search(); } });
+
+  search();
+</script>
+</body>
+</html>

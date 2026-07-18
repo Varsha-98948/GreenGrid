@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — GreenGrid</title>
+<link href="css/styles.css" rel="stylesheet">
+</head>
+<body>
+
+<div id="gg-page">
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+      <h3 class="mb-1">Dashboard</h3>
+      <p class="text-muted-gg mb-0" id="today-label"></p>
+    </div>
+    <a href="/problem-form.html" class="btn btn-gg-primary">+ Add Problem</a>
+  </div>
+
+  <div class="row g-3 mb-4" id="stat-cards">
+    <div class="col-6 col-lg-3"><div class="gg-card gg-skeleton" style="height:92px;"></div></div>
+    <div class="col-6 col-lg-3"><div class="gg-card gg-skeleton" style="height:92px;"></div></div>
+    <div class="col-6 col-lg-3"><div class="gg-card gg-skeleton" style="height:92px;"></div></div>
+    <div class="col-6 col-lg-3"><div class="gg-card gg-skeleton" style="height:92px;"></div></div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-12">
+      <div class="gg-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="mb-0">Contribution Calendar</h6>
+          <span class="text-muted-gg" style="font-size:.78rem;">Last 365 days</span>
+        </div>
+        <div class="contrib-grid" id="contrib-calendar"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-lg-4">
+      <div class="gg-card h-100">
+        <h6 class="mb-3">Difficulty Breakdown</h6>
+        <div id="difficulty-breakdown"></div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="gg-card h-100">
+        <h6 class="mb-3">Top Topics</h6>
+        <div id="topic-breakdown"></div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="gg-card h-100">
+        <h6 class="mb-3">Language Usage</h6>
+        <div id="language-usage"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="gg-card">
+        <h6 class="mb-3">Recent Commits</h6>
+        <div id="recent-commits"></div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="gg-card">
+        <h6 class="mb-3">Repository Status</h6>
+        <div id="repo-status"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/toast.js"></script>
+<script src="js/shell.js"></script>
+<script>
+  GGShell.render('dashboard');
+
+  document.getElementById('today-label').textContent = new Date().toLocaleDateString(undefined, {
+    weekday: 'long', month: 'long', day: 'numeric',
+  });
+
+  const DIFF_COLOR = { EASY: 'var(--easy)', MEDIUM: 'var(--medium)', HARD: 'var(--hard)' };
+
+  function statCard(label, value, sub) {
+    return `<div class="col-6 col-lg-3"><div class="gg-card gg-card-tight">
+      <div class="gg-stat-label">${label}</div>
+      <div class="gg-stat-value">${value}</div>
+      ${sub ? `<div class="text-muted-gg" style="font-size:.78rem;margin-top:2px;">${sub}</div>` : ''}
+    </div></div>`;
+  }
+
+  function barRow(label, value, max, color) {
+    const pct = max > 0 ? Math.max(4, Math.round((value / max) * 100)) : 0;
+    return `<div class="mb-2">
+      <div class="d-flex justify-content-between mb-1" style="font-size:.82rem;">
+        <span class="text-secondary-gg">${label}</span><span class="mono text-muted-gg">${value}</span>
+      </div>
+      <div style="height:6px;border-radius:4px;background:var(--bg-elevated);overflow:hidden;">
+        <div style="height:100%;width:${pct}%;background:${color || 'var(--accent)'};border-radius:4px;"></div>
+      </div>
+    </div>`;
+  }
+
+  async function load() {
+    try {
+      const res = await GGApi.get('/api/dashboard');
+      const d = res.data;
+
+      document.getElementById('stat-cards').innerHTML =
+        statCard('Today', d.todaysProgress, "problems solved today") +
+        statCard('Current Streak', d.currentStreak + ' 🔥', 'longest: ' + d.longestStreak + ' days') +
+        statCard('Total Solved', d.totalProblemsSolved, null) +
+        statCard('Repository', d.repositoryStatus.connected ? 'Connected' : 'Not connected',
+                  d.repositoryStatus.fullName || '');
+
+      renderCalendar(d.contributionCalendar);
+
+      const diffMax = Math.max(1, ...Object.values(d.difficultyBreakdown));
+      document.getElementById('difficulty-breakdown').innerHTML =
+        ['EASY', 'MEDIUM', 'HARD'].map(k => barRow(k.charAt(0) + k.slice(1).toLowerCase(),
+          d.difficultyBreakdown[k] || 0, diffMax, DIFF_COLOR[k])).join('')
+        || '<p class="text-muted-gg" style="font-size:.85rem;">No problems yet.</p>';
+
+      const topics = Object.entries(d.topicBreakdown).slice(0, 6);
+      const topicMax = Math.max(1, ...topics.map(([, v]) => v));
+      document.getElementById('topic-breakdown').innerHTML =
+        topics.map(([k, v]) => barRow(k, v, topicMax)).join('')
+        || '<p class="text-muted-gg" style="font-size:.85rem;">No topics tagged yet.</p>';
+
+      const langs = Object.entries(d.languageUsage).slice(0, 6);
+      const langMax = Math.max(1, ...langs.map(([, v]) => v));
+      document.getElementById('language-usage').innerHTML =
+        langs.map(([k, v]) => barRow(k, v, langMax)).join('')
+        || '<p class="text-muted-gg" style="font-size:.85rem;">No languages yet.</p>';
+
+      document.getElementById('recent-commits').innerHTML = d.recentCommits.length
+        ? d.recentCommits.map(c => `
+          <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid var(--border-soft);">
+            <div>
+              <div style="font-weight:500;font-size:.9rem;">${c.title}</div>
+              <div class="text-muted-gg mono" style="font-size:.76rem;">${c.commitSha ? c.commitSha.substring(0,7) : '—'} · ${c.solvedDate}</div>
+            </div>
+            <span class="badge-gg badge-status-${c.commitStatus.toLowerCase()}">${c.commitStatus}</span>
+          </div>`).join('')
+        : '<p class="text-muted-gg" style="font-size:.85rem;">No commits yet — solve your first problem!</p>';
+
+      const rs = d.repositoryStatus;
+      document.getElementById('repo-status').innerHTML = rs.connected ? `
+        <div class="mb-2"><span class="text-muted-gg" style="font-size:.8rem;">Repository</span><div class="mono" style="font-size:.88rem;">${rs.fullName}</div></div>
+        <div class="mb-3"><span class="text-muted-gg" style="font-size:.8rem;">Status</span><div><span class="badge-gg badge-status-committed">${rs.lastSyncStatus || 'READY'}</span></div></div>
+        <a href="${rs.htmlUrl}" target="_blank" class="btn btn-gg-outline w-100" style="font-size:.85rem;">View on GitHub</a>
+      ` : `<p class="text-muted-gg" style="font-size:.85rem;">No repository connected.</p>
+           <a href="/onboarding.html" class="btn btn-gg-primary w-100" style="font-size:.85rem;">Connect now</a>`;
+
+    } catch (err) {
+      GGToast.error(err);
+    }
+  }
+
+  function renderCalendar(days) {
+    const el = document.getElementById('contrib-calendar');
+    el.innerHTML = days.map(d => {
+      let level = 0;
+      if (d.count >= 1) level = 1;
+      if (d.count >= 2) level = 2;
+      if (d.count >= 4) level = 3;
+      if (d.count >= 6) level = 4;
+      return `<div class="contrib-cell" data-level="${level}" title="${d.date}: ${d.count} solved"></div>`;
+    }).join('');
+  }
+
+  load();
+</script>
+</body>
+</html>

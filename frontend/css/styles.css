@@ -1,0 +1,380 @@
+/* =========================================================================
+   GreenGrid Design System
+   Signature element: the commit-grid — a mosaic of small rounded squares
+   at varying accent opacity. This literally *is* the product (a GitHub
+   contribution graph), so it recurs everywhere: hero backgrounds, section
+   dividers, loading states, and — for real — the dashboard's actual
+   contribution calendar.
+   ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* Color */
+  --bg: #0e1512;
+  --bg-elevated: #131c17;
+  --surface: #182119;
+  --surface-hover: #1e2b22;
+  --border: #263129;
+  --border-soft: #1d2620;
+  --text-primary: #edf3ee;
+  --text-secondary: #a9b8ae;
+  --text-muted: #6f8177;
+  --accent: #3fd68e;
+  --accent-dim: #2ea36c;
+  --accent-soft: rgba(63, 214, 142, 0.12);
+  --accent-soft-strong: rgba(63, 214, 142, 0.22);
+  --danger: #e5626a;
+  --danger-soft: rgba(229, 98, 106, 0.14);
+  --warning: #e0ac52;
+  --warning-soft: rgba(224, 172, 82, 0.14);
+
+  /* Difficulty colors */
+  --easy: #3fd68e;
+  --medium: #e0ac52;
+  --hard: #e5626a;
+
+  /* Type */
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Radius / shadow */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.24), 0 8px 24px rgba(0, 0, 0, 0.18);
+
+  /* Bootstrap overrides so its components inherit our palette */
+  --bs-body-bg: var(--bg);
+  --bs-body-color: var(--text-primary);
+  --bs-border-color: var(--border);
+  --bs-primary: var(--accent);
+  --bs-primary-rgb: 63, 214, 142;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  min-height: 100%;
+}
+
+body {
+  background-image:
+    radial-gradient(circle at 15% 0%, rgba(63, 214, 142, 0.06), transparent 45%),
+    radial-gradient(circle at 85% 100%, rgba(63, 214, 142, 0.04), transparent 40%);
+  background-attachment: fixed;
+}
+
+h1, h2, h3, h4, h5, .display-font {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.mono { font-family: var(--font-mono); }
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-dim); }
+
+.text-muted-gg { color: var(--text-muted) !important; }
+.text-secondary-gg { color: var(--text-secondary) !important; }
+
+/* ---- Commit-grid motif -------------------------------------------------- */
+
+.commit-grid-bg {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 5px;
+  padding: 24px;
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
+  mask-image: linear-gradient(to bottom, black, transparent 85%);
+}
+
+.commit-grid-bg span {
+  aspect-ratio: 1;
+  border-radius: 3px;
+  background: var(--accent-soft);
+}
+.commit-grid-bg span.lit-1 { background: rgba(63, 214, 142, 0.18); }
+.commit-grid-bg span.lit-2 { background: rgba(63, 214, 142, 0.32); }
+.commit-grid-bg span.lit-3 { background: rgba(63, 214, 142, 0.5); }
+
+/* ---- Layout shell -------------------------------------------------------- */
+
+.gg-shell { display: flex; min-height: 100vh; }
+
+.gg-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--bg-elevated);
+  border-right: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  padding: 20px 14px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.gg-main { flex: 1; min-width: 0; padding: 28px 36px 60px; }
+
+.gg-logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 6px 10px 22px;
+}
+
+.gg-logo-mark {
+  width: 20px; height: 20px;
+  border-radius: 5px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2px;
+  padding: 2px;
+  background: var(--surface);
+}
+.gg-logo-mark span { border-radius: 2px; background: var(--accent); }
+.gg-logo-mark span:nth-child(2) { background: var(--accent-dim); opacity: .6; }
+.gg-logo-mark span:nth-child(3) { background: var(--accent-dim); opacity: .8; }
+.gg-logo-mark span:nth-child(4) { background: var(--accent); opacity: .4; }
+
+.gg-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 2px;
+  transition: background 0.15s, color 0.15s;
+}
+.gg-nav-link:hover { background: var(--surface); color: var(--text-primary); }
+.gg-nav-link.active { background: var(--accent-soft); color: var(--accent); }
+.gg-nav-link svg { flex-shrink: 0; opacity: 0.85; }
+
+.gg-sidebar-footer {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-soft);
+}
+
+/* ---- Cards --------------------------------------------------------------- */
+
+.gg-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: var(--shadow-card);
+}
+
+.gg-card-tight { padding: 16px; }
+
+.gg-stat-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.gg-stat-value {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.15;
+  margin-top: 4px;
+}
+
+/* ---- Buttons --------------------------------------------------------------- */
+
+.btn-gg-primary {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #062015;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  padding: 9px 18px;
+  transition: background 0.15s, transform 0.1s;
+}
+.btn-gg-primary:hover { background: var(--accent-dim); color: #062015; }
+.btn-gg-primary:active { transform: translateY(1px); }
+
+.btn-gg-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 9px 18px;
+  font-weight: 500;
+  transition: border-color 0.15s, background 0.15s;
+}
+.btn-gg-outline:hover { border-color: var(--accent-dim); background: var(--surface-hover); color: var(--text-primary); }
+
+.btn-gg-danger {
+  background: transparent;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  border-radius: var(--radius-sm);
+  padding: 9px 18px;
+  font-weight: 500;
+}
+.btn-gg-danger:hover { background: var(--danger-soft); color: var(--danger); }
+
+.btn-gg-icon {
+  width: 34px; height: 34px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+}
+.btn-gg-icon:hover { color: var(--text-primary); border-color: var(--accent-dim); }
+
+/* ---- Forms --------------------------------------------------------------- */
+
+.form-label-gg {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  display: block;
+}
+
+.form-control-gg, .form-select-gg {
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 0.92rem;
+  font-family: var(--font-body);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.form-control-gg:focus, .form-select-gg:focus {
+  outline: none;
+  border-color: var(--accent-dim);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.form-control-gg::placeholder { color: var(--text-muted); }
+
+textarea.form-control-gg { resize: vertical; }
+
+/* ---- Badges --------------------------------------------------------------- */
+
+.badge-gg { padding: 4px 10px; border-radius: 100px; font-size: 0.74rem; font-weight: 600; }
+.badge-easy { background: rgba(63, 214, 142, 0.14); color: var(--easy); }
+.badge-medium { background: rgba(224, 172, 82, 0.14); color: var(--medium); }
+.badge-hard { background: rgba(229, 98, 106, 0.14); color: var(--hard); }
+.badge-neutral { background: var(--surface-hover); color: var(--text-secondary); border: 1px solid var(--border); }
+.badge-status-committed { background: var(--accent-soft); color: var(--accent); }
+.badge-status-pending { background: var(--warning-soft); color: var(--warning); }
+.badge-status-failed { background: var(--danger-soft); color: var(--danger); }
+
+/* ---- Tag chips --------------------------------------------------------------- */
+
+.tag-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 4px 10px 4px 12px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.tag-chip button { background: none; border: none; color: var(--text-muted); line-height: 1; padding: 0; }
+.tag-chip button:hover { color: var(--danger); }
+
+/* ---- Auth / centered pages --------------------------------------------------------------- */
+
+.gg-auth-wrap {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: 24px;
+}
+
+.gg-auth-card {
+  width: 100%; max-width: 400px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 36px 32px;
+  position: relative;
+  z-index: 1;
+  box-shadow: var(--shadow-card);
+}
+
+/* ---- Contribution calendar --------------------------------------------------------------- */
+
+.contrib-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, 1fr);
+  gap: 3px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.contrib-cell {
+  width: 11px; height: 11px;
+  border-radius: 3px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-soft);
+}
+.contrib-cell[data-level="1"] { background: rgba(63, 214, 142, 0.22); border-color: transparent; }
+.contrib-cell[data-level="2"] { background: rgba(63, 214, 142, 0.45); border-color: transparent; }
+.contrib-cell[data-level="3"] { background: rgba(63, 214, 142, 0.7); border-color: transparent; }
+.contrib-cell[data-level="4"] { background: var(--accent); border-color: transparent; }
+
+/* ---- Misc --------------------------------------------------------------- */
+
+.gg-divider { border-color: var(--border-soft); }
+.gg-skeleton { background: linear-gradient(90deg, var(--surface) 25%, var(--surface-hover) 37%, var(--surface) 63%); background-size: 400% 100%; animation: gg-shimmer 1.4s ease infinite; border-radius: var(--radius-sm); }
+@keyframes gg-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+
+.gg-toast-container { position: fixed; top: 18px; right: 18px; z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
+.gg-toast {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 12px 16px; min-width: 260px; box-shadow: var(--shadow-card);
+  font-size: 0.88rem; display: flex; align-items: center; gap: 10px;
+  animation: gg-toast-in 0.18s ease;
+}
+.gg-toast.success { border-left: 3px solid var(--accent); }
+.gg-toast.error { border-left: 3px solid var(--danger); }
+@keyframes gg-toast-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 900px) {
+  .gg-sidebar { position: fixed; left: -260px; z-index: 1000; transition: left 0.2s; box-shadow: 0 0 40px rgba(0,0,0,0.4); }
+  .gg-sidebar.open { left: 0; }
+  .gg-main { padding: 20px 16px 60px; }
+}
+
+/* Light theme override, toggled via [data-theme="light"] on <html> */
+html[data-theme="light"] {
+  --bg: #f7faf8;
+  --bg-elevated: #ffffff;
+  --surface: #ffffff;
+  --surface-hover: #eef3ef;
+  --border: #dde6e0;
+  --border-soft: #e7ede9;
+  --text-primary: #16211a;
+  --text-secondary: #4b5b51;
+  --text-muted: #7c8c82;
+}

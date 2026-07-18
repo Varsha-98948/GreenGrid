@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<title>Signing you in — GreenGrid</title>
+<link href="css/styles.css" rel="stylesheet">
+</head>
+<body>
+<div class="gg-auth-wrap">
+  <div class="text-center">
+    <div class="spinner-border" style="color: var(--accent);" role="status"></div>
+    <p class="text-muted-gg mt-3">Finishing GitHub sign-in…</p>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script>
+  (async () => {
+    const params = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = params.get('accessToken');
+    const refreshToken = params.get('refreshToken');
+    const onboardingCompleted = params.get('onboardingCompleted') === 'true';
+
+    if (!accessToken || !refreshToken) {
+      window.location.href = '/login.html';
+      return;
+    }
+
+    localStorage.setItem('gg_access_token', accessToken);
+    localStorage.setItem('gg_refresh_token', refreshToken);
+
+    try {
+      const account = await GGApi.get('/api/settings/account');
+      localStorage.setItem('gg_user', JSON.stringify({
+        userId: account.data.userId,
+        email: account.data.email,
+        displayName: account.data.displayName,
+        onboardingCompleted,
+      }));
+    } catch {
+      // Non-fatal — the shell will still render with a blank name.
+    }
+
+    window.location.href = onboardingCompleted ? '/dashboard.html' : '/onboarding.html';
+  })();
+</script>
+</body>
+</html>
