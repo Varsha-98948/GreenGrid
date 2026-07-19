@@ -5,6 +5,7 @@ spring:
     password: ${DATABASE_PASSWORD}
 
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: validate
 
