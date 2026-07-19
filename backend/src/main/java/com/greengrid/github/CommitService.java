@@ -5,15 +5,20 @@ import com.greengrid.entity.Problem;
 import com.greengrid.service.GitHubAccountService;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
- * Turns a saved Problem into three real commits worth of content in the
- * user's repository: Solution.<ext>, README.md, metadata.json, all under
- * {Difficulty}/{Problem Title}/. Each file is written with its own
- * Contents API call (GitHub commits each PUT individually) using the exact
- * same commit message, so they read as one logical unit of work in the
- * repo's history.
+ * Turns a saved Problem into exactly one real commit in the user's
+ * repository, containing Solution.<ext>, README.md, and metadata.json
+ * together under {Difficulty}/{Problem Title}/.
+ *
+ * Uses the Git Data API (blob -> tree -> commit -> ref) rather than three
+ * separate Contents API PUTs, because each Contents API PUT is its own
+ * atomic commit — three files would otherwise show up as three commits
+ * with the same message, which misrepresents the history. This way,
+ * "Solve: Two Sum" is one commit touching three files, same as if the
+ * user had run `git add . && git commit` locally.
  */
 @Service
 public class CommitService {
@@ -34,38 +39,49 @@ public class CommitService {
 
     /**
      * Commits/pushes the solution, README, and metadata for the given
-     * problem into the given repository. Returns the sha of the final
-     * (solution file) commit, which is stored on the Problem for later
-     * "recent commits" display and re-sync detection.
+     * problem as a single commit. Returns the new commit's sha, which is
+     * stored on the Problem for "recent commits" display and re-sync detection.
      */
     public String commitProblem(UUID userId, GitRepository repository, Problem problem) {
         String token = gitHubAccountService.getDecryptedTokenForUser(userId);
-        String folder = buildFolderPath(problem);
-        String branch = repository.getDefaultBranch();
         String owner = repository.getOwner();
         String repoName = repository.getName();
+        String branch = repository.getDefaultBranch();
+        String folder = buildFolderPath(problem);
         String commitMessage = readmeGeneratorService.buildCommitMessage(problem);
-
         String extension = LanguageExtensionMapper.extensionFor(problem.getLanguage());
-        String solutionPath = folder + "/Solution." + extension;
-        String readmePath = folder + "/README.md";
-        String metadataPath = folder + "/metadata.json";
 
-        String solutionSha = apiClient.getFileShaIfExists(token, owner, repoName, solutionPath, branch);
-        apiClient.createOrUpdateFile(token, owner, repoName, solutionPath, problem.getCode(),
-                commitMessage, branch, solutionSha);
+        // 1. Where does the branch currently point? (null => brand new, empty repo)
+        String parentCommitSha = apiClient.getBranchTipCommitSha(token, owner, repoName, branch);
+        String baseTreeSha = parentCommitSha != null
+                ? apiClient.getTreeShaForCommit(token, owner, repoName, parentCommitSha)
+                : null;
 
-        String readmeSha = apiClient.getFileShaIfExists(token, owner, repoName, readmePath, branch);
-        apiClient.createOrUpdateFile(token, owner, repoName, readmePath,
-                readmeGeneratorService.generate(problem), commitMessage, branch, readmeSha);
+        // 2. Upload each file's content as a blob.
+        String solutionBlobSha = apiClient.createBlob(token, owner, repoName, problem.getCode());
+        String readmeBlobSha = apiClient.createBlob(token, owner, repoName, readmeGeneratorService.generate(problem));
+        String metadataBlobSha = apiClient.createBlob(token, owner, repoName, metadataGeneratorService.generate(problem));
 
-        String metadataSha = apiClient.getFileShaIfExists(token, owner, repoName, metadataPath, branch);
-        var result = apiClient.createOrUpdateFile(token, owner, repoName, metadataPath,
-                metadataGeneratorService.generate(problem), commitMessage, branch, metadataSha);
+        // 3. One new tree layering all three blobs on top of the branch's current tree.
+        String newTreeSha = apiClient.createTree(token, owner, repoName, baseTreeSha, List.of(
+                new GitHubApiClient.TreeEntryInput(folder + "/Solution." + extension, solutionBlobSha),
+                new GitHubApiClient.TreeEntryInput(folder + "/README.md", readmeBlobSha),
+                new GitHubApiClient.TreeEntryInput(folder + "/metadata.json", metadataBlobSha)
+        ));
+
+        // 4. One commit pointing at that tree.
+        GitHubApiClient.GitCommitObject commit =
+                apiClient.createCommit(token, owner, repoName, commitMessage, newTreeSha, parentCommitSha);
+
+        // 5. Move the branch to point at the new commit (or create the branch, first commit only).
+        if (parentCommitSha != null) {
+            apiClient.updateBranchRef(token, owner, repoName, branch, commit.sha());
+        } else {
+            apiClient.createBranchRef(token, owner, repoName, branch, commit.sha());
+        }
 
         problem.setRepoFolderPath(folder);
-
-        return result.commit() != null ? result.commit().sha() : null;
+        return commit.sha();
     }
 
     /**

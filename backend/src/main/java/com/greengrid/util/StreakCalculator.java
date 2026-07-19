@@ -10,17 +10,22 @@ import java.util.List;
  * doesn't lose their streak just because it's 11pm and they haven't
  * solved today's problem yet) and then walks backward through
  * consecutive calendar days.
+ *
+ * "Today" is always passed in explicitly rather than computed internally
+ * with LocalDate.now() — the caller is responsible for resolving it in
+ * the *user's* timezone (see DashboardService), since a backend running
+ * in UTC would otherwise silently roll a user's streak over at the wrong
+ * local hour.
  */
 public final class StreakCalculator {
 
     private StreakCalculator() {}
 
-    public static int calculateCurrentStreak(List<LocalDate> distinctSolvedDatesDesc) {
+    public static int calculateCurrentStreak(List<LocalDate> distinctSolvedDatesDesc, LocalDate today) {
         if (distinctSolvedDatesDesc == null || distinctSolvedDatesDesc.isEmpty()) {
             return 0;
         }
 
-        LocalDate today = LocalDate.now();
         LocalDate mostRecent = distinctSolvedDatesDesc.get(0);
 
         if (mostRecent.isBefore(today.minusDays(1))) {

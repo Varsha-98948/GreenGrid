@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,12 +29,20 @@ public class DashboardService {
         this.gitRepositoryRepository = gitRepositoryRepository;
     }
 
+    /**
+     * @param zone the user's local timezone, resolved by the controller from
+     *             an explicit request parameter (falling back to server
+     *             default only if the client didn't supply one). "Today" and
+     *             the current streak are computed against this zone, not the
+     *             backend host's — a solve logged at 11pm IST must count as
+     *             today for that user even if the server itself is on UTC.
+     */
     @Transactional(readOnly = true)
-    public DashboardResponse buildDashboard(UUID userId) {
-        LocalDate today = LocalDate.now();
+    public DashboardResponse buildDashboard(UUID userId, ZoneId zone) {
+        LocalDate today = LocalDate.now(zone);
 
         List<LocalDate> solvedDatesDesc = problemRepository.findDistinctSolvedDatesForUser(userId);
-        int currentStreak = StreakCalculator.calculateCurrentStreak(solvedDatesDesc);
+        int currentStreak = StreakCalculator.calculateCurrentStreak(solvedDatesDesc, today);
         int longestStreak = StreakCalculator.calculateLongestStreak(solvedDatesDesc);
 
         long todaysProgress = problemRepository.countByUserIdAndSolvedDate(userId, today);
@@ -59,7 +68,7 @@ public class DashboardService {
                         row -> row.getLanguage(), row -> row.getTotal(),
                         (a, b) -> a, LinkedHashMap::new));
 
-        List<DashboardResponse.ContributionDay> calendar = buildContributionCalendar(userId);
+        List<DashboardResponse.ContributionDay> calendar = buildContributionCalendar(userId, today);
 
         DashboardResponse.RepoStatusSummary repoStatus = gitRepositoryRepository.findByUserId(userId)
                 .map(this::toRepoStatus)
@@ -72,13 +81,13 @@ public class DashboardService {
         );
     }
 
-    private List<DashboardResponse.ContributionDay> buildContributionCalendar(UUID userId) {
-        LocalDate since = LocalDate.now().minusDays(364);
+    private List<DashboardResponse.ContributionDay> buildContributionCalendar(UUID userId, LocalDate today) {
+        LocalDate since = today.minusDays(364);
         Map<LocalDate, Long> counts = problemRepository.countPerDaySince(userId, since).stream()
                 .collect(Collectors.toMap(ProblemRepository.DailyCount::getDay, ProblemRepository.DailyCount::getTotal));
 
         DateTimeFormatter fmt = DateTimeFormatter.ISO_LOCAL_DATE;
-        return since.datesUntil(LocalDate.now().plusDays(1))
+        return since.datesUntil(today.plusDays(1))
                 .map(day -> new DashboardResponse.ContributionDay(day.format(fmt), counts.getOrDefault(day, 0L)))
                 .toList();
     }
