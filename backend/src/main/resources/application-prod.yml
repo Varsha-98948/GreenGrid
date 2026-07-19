@@ -1,11 +1,28 @@
-spring.datasource.url=${DATABASE_URL}
-spring.datasource.username=${DATABASE_USERNAME}
-spring.datasource.password=${DATABASE_PASSWORD}
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
 
-jwt.secret=${JWT_SECRET}
+  jpa:
+    hibernate:
+      ddl-auto: validate
 
-token.encryption.key=${TOKEN_ENCRYPTION_KEY}
+server:
+  port: ${PORT:8080}
 
-frontend.url=${FRONTEND_URL}
+greengrid:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-ttl-minutes: ${ACCESS_TOKEN_TTL_MINUTES:15}
+    refresh-token-ttl-days: ${REFRESH_TOKEN_TTL_DAYS:30}
 
-spring.jpa.hibernate.ddl-auto=validate
+  encryption:
+    key: ${TOKEN_ENCRYPTION_KEY}
+
+  github:
+    client-id: ${GITHUB_CLIENT_ID}
+    client-secret: ${GITHUB_CLIENT_SECRET}
+    redirect-uri: ${GITHUB_REDIRECT_URI}
+
+  frontend-url: ${FRONTEND_URL}

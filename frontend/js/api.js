@@ -3,7 +3,7 @@
  * than using fetch() directly, so token storage/refresh/error-shape stays
  * in exactly one place.
  */
-const GG_API_BASE = window.GG_CONFIG?.apiBaseUrl || 'http://localhost:8080';
+const GG_API_BASE = window.GG_CONFIG?.apiBaseUrl || '';
 
 const GGAuth = {
   getAccessToken: () => localStorage.getItem('gg_access_token'),
@@ -44,13 +44,13 @@ const GGAuth = {
   /** Redirects to login if there's no session. Call at the top of every protected page. */
   requireAuth() {
     if (!GGAuth.isAuthenticated()) {
-      window.location.href = '/login.html';
+      window.location.href = 'login.html';
     }
   },
 
   logout() {
     GGAuth.clearSession();
-    window.location.href = '/login.html';
+    window.location.href = 'login.html';
   },
 };
 

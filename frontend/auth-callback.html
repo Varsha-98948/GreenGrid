@@ -23,7 +23,7 @@
     const onboardingCompleted = params.get('onboardingCompleted') === 'true';
 
     if (!accessToken || !refreshToken) {
-      window.location.href = '/login.html';
+      window.location.href = 'login.html';
       return;
     }
 
@@ -42,7 +42,7 @@
       // Non-fatal — the shell will still render with a blank name.
     }
 
-    window.location.href = onboardingCompleted ? '/dashboard.html' : '/onboarding.html';
+    window.location.href = onboardingCompleted ? 'dashboard.html' : 'onboarding.html';
   })();
 </script>
 </body>

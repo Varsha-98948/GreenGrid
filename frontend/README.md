@@ -17,7 +17,8 @@ Plain HTML/CSS/vanilla JS + Bootstrap 5 + Monaco Editor. No build step required.
 
 ## Before deploying
 
-Edit `js/config.js` and point `apiBaseUrl` at your deployed backend:
+Set `apiBaseUrl` in `js/config.js` to your deployed backend when the frontend
+and API use different origins. For a same-origin reverse proxy, leave it empty:
 
 ```js
 window.GG_CONFIG = { apiBaseUrl: 'https://your-backend.onrender.com' };

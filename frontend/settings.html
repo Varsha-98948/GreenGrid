@@ -33,7 +33,7 @@
           <h6 class="mb-0">Repository</h6>
         </div>
         <p class="text-muted-gg mb-3" style="font-size:.85rem;" id="repo-detail">Loading…</p>
-        <a href="/onboarding.html" class="btn btn-gg-outline">Change Repository</a>
+        <a href="onboarding.html" class="btn btn-gg-outline">Change Repository</a>
       </div>
 
       <div class="gg-card mb-3">
@@ -133,7 +133,7 @@
     try {
       await GGApi.delete('/api/settings/account');
       GGAuth.clearSession();
-      window.location.href = '/index.html';
+      window.location.href = 'index.html';
     } catch (err) { GGToast.error(err); }
   });
 

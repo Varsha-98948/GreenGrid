@@ -5,10 +5,10 @@
  */
 const GGShell = {
   NAV_ITEMS: [
-    { key: 'dashboard', label: 'Dashboard', href: '/dashboard.html', icon: 'grid' },
-    { key: 'add-problem', label: 'Add Problem', href: '/problem-form.html', icon: 'plus' },
-    { key: 'search', label: 'Search', href: '/search.html', icon: 'search' },
-    { key: 'settings', label: 'Settings', href: '/settings.html', icon: 'settings' },
+    { key: 'dashboard', label: 'Dashboard', href: 'dashboard.html', icon: 'grid' },
+    { key: 'add-problem', label: 'Add Problem', href: 'problem-form.html', icon: 'plus' },
+    { key: 'search', label: 'Search', href: 'search.html', icon: 'search' },
+    { key: 'settings', label: 'Settings', href: 'settings.html', icon: 'settings' },
   ],
 
   ICONS: {

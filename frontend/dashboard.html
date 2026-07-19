@@ -14,7 +14,7 @@
       <h3 class="mb-1">Dashboard</h3>
       <p class="text-muted-gg mb-0" id="today-label"></p>
     </div>
-    <a href="/problem-form.html" class="btn btn-gg-primary">+ Add Problem</a>
+    <a href="problem-form.html" class="btn btn-gg-primary">+ Add Problem</a>
   </div>
 
   <div class="row g-3 mb-4" id="stat-cards">
@@ -155,7 +155,7 @@
         <div class="mb-3"><span class="text-muted-gg" style="font-size:.8rem;">Status</span><div><span class="badge-gg badge-status-committed">${rs.lastSyncStatus || 'READY'}</span></div></div>
         <a href="${rs.htmlUrl}" target="_blank" class="btn btn-gg-outline w-100" style="font-size:.85rem;">View on GitHub</a>
       ` : `<p class="text-muted-gg" style="font-size:.85rem;">No repository connected.</p>
-           <a href="/onboarding.html" class="btn btn-gg-primary w-100" style="font-size:.85rem;">Connect now</a>`;
+           <a href="onboarding.html" class="btn btn-gg-primary w-100" style="font-size:.85rem;">Connect now</a>`;
 
     } catch (err) {
       GGToast.error(err);

@@ -41,7 +41,7 @@
     </button>
 
     <p class="text-center text-muted-gg mb-0" style="font-size:.85rem;">
-      Already have an account? <a href="/login.html">Log in</a>
+      Already have an account? <a href="login.html">Log in</a>
     </p>
   </div>
 </div>
@@ -50,7 +50,7 @@
 <script src="js/api.js"></script>
 <script src="js/toast.js"></script>
 <script>
-  if (GGAuth.isAuthenticated()) window.location.href = '/dashboard.html';
+  if (GGAuth.isAuthenticated()) window.location.href = 'dashboard.html';
 
   const grid = document.getElementById('bg-grid');
   for (let i = 0; i < 96; i++) {
@@ -73,7 +73,7 @@
         password: document.getElementById('password').value,
       });
       GGAuth.setSession(res.data);
-      window.location.href = '/onboarding.html';
+      window.location.href = 'onboarding.html';
     } catch (err) {
       GGToast.error(err);
       btn.disabled = false;

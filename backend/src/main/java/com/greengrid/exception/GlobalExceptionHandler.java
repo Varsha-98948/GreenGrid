@@ -8,7 +8,8 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -20,6 +21,8 @@ import java.util.List;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex, HttpServletRequest req) {
@@ -70,14 +73,10 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<?> handleException(Exception ex)
-{
-    ex.printStackTrace();
-
-    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(Map.of(
-                    "error", ex.getClass().getName(),
-                    "message", ex.getMessage()
-            ));
-}
+    public ResponseEntity<ErrorResponse> handleException(Exception ex, HttpServletRequest req) {
+        log.error("Unhandled request failure for {}", req.getRequestURI(), ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ErrorResponse.of(500, "Internal Server Error",
+                        "An unexpected error occurred", req.getRequestURI()));
+    }
 }

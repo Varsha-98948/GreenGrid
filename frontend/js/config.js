@@ -1,4 +1,5 @@
-// Set this to your deployed Render/Railway backend URL before deploying to Vercel.
-window.GG_CONFIG = {
-  apiBaseUrl: 'http://localhost:8080',
+// Use an absolute backend URL when the API and static site have different
+// origins. Leaving this empty supports same-origin/reverse-proxy deployments.
+window.GG_CONFIG = window.GG_CONFIG || {
+  apiBaseUrl: '',
 };

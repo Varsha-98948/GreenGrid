@@ -7,7 +7,9 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.time.Duration;
 import java.util.Map;
 
 /**
@@ -31,11 +33,14 @@ public class GitHubOAuthClient {
     }
 
     public String buildAuthorizeUrl(String state) {
-        return "https://github.com/login/oauth/authorize"
-                + "?client_id=" + properties.clientId()
-                + "&redirect_uri=" + properties.redirectUri()
-                + "&scope=repo,read:user"
-                + "&state=" + state;
+        return UriComponentsBuilder.fromUriString("https://github.com/login/oauth/authorize")
+                .queryParam("client_id", properties.clientId())
+                .queryParam("redirect_uri", properties.redirectUri())
+                .queryParam("scope", "repo,read:user")
+                .queryParam("state", state)
+                .build()
+                .encode()
+                .toUriString();
     }
 
     public String exchangeCodeForAccessToken(String code) {
@@ -52,7 +57,7 @@ public class GitHubOAuthClient {
                     .bodyValue(body)
                     .retrieve()
                     .bodyToMono(TokenResponse.class)
-                    .block();
+                    .block(Duration.ofSeconds(15));
 
             if (response == null || response.access_token() == null) {
                 throw new GitHubIntegrationException(
