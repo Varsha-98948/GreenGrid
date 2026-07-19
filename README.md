@@ -1,228 +1,196 @@
-# 🌿 GreenGrid
+# 🧩 GreenGrid
 
-> **A Git-powered coding journal that transforms every solved problem into a structured GitHub repository.**
+> **A developer growth dashboard that brings together coding journeys, problem-solving progress, and contributions in one place.**
 
-GreenGrid is a full-stack developer platform that helps programmers organize, track, and version-control their coding journey. Instead of storing solutions in scattered folders or online judges, GreenGrid automatically structures every solved problem and syncs it to GitHub, creating a clean, searchable, and portfolio-worthy repository.
+GreenGrid is a platform built to help developers track, organize, and visualize their complete growth journey across different coding platforms and development activities.
 
----
+A developer's progress is not limited to GitHub commits alone. Every solved problem, every project built, every challenge completed, and every contribution made represents a piece of their journey.
 
-## ✨ Features
-
-### 📚 Problem Management
-- Save coding problems from any platform
-- Rich code editor with syntax highlighting
-- Notes, observations, and learning points
-- Time & space complexity tracking
-- Favorite important problems
-- Custom tags and categorization
-
-### 🐙 GitHub Integration
-- Secure GitHub OAuth authentication
-- Connect an existing repository or create a new one
-- Automatic repository synchronization
-- Structured folder organization
-- Commit history for every solved problem
-
-### 📊 Dashboard & Analytics
-- Daily progress tracking
-- Current & longest solving streaks
-- GitHub-style contribution calendar
-- Difficulty distribution
-- Topic-wise breakdown
-- Programming language usage
-- Recent activity overview
-
-### 🔍 Search & Revision
-- Powerful filtering
-- Search by title, tag, language, or difficulty
-- Revision status tracking
-- Bookmark important questions
-
-### 🎨 Modern Interface
-- Responsive design
-- Dark theme
-- Monaco Code Editor
-- Smooth animations
-- Clean dashboard experience
+GreenGrid brings these pieces together into one unified dashboard.
 
 ---
 
-# 🏗️ Tech Stack
+## ✨ Vision
 
-## Backend
+Modern developers learn and grow across multiple platforms:
 
-- Java 21
-- Spring Boot 3
-- Spring Security
-- Spring Data JPA
-- PostgreSQL
-- Flyway
-- JWT Authentication
-- GitHub OAuth
-- Maven
+* 🧠 Solving problems on coding platforms
+* 💻 Building personal and professional projects
+* 🚀 Contributing to open-source
+* 📚 Learning new technologies
+* 📈 Tracking personal growth
+
+However, this progress is scattered across different platforms.
+
+**GreenGrid aims to create a single place where developers can understand, track, and showcase their journey.**
+
+---
+
+# 🚀 Features
+
+## 🔐 Secure Authentication
+
+* GitHub OAuth 2.0 authentication
+* JWT-based session management
+* Secure user identification through GitHub profiles
+
+## 📊 Developer Dashboard
+
+* Centralized view of developer activity
+* Track coding progress and achievements
+* Visual representation of growth over time
+
+## 🧩 Unified Progress Tracking
+
+Bring together different parts of development:
+
+* Coding problems solved
+* Projects completed
+* Contributions made
+* Learning milestones
+
+## 🌐 Platform Integration
+
+Designed to connect developer activity from multiple sources:
+
+* GitHub
+* Coding platforms
+* Developer tools
+
+*(More integrations coming soon)*
+
+---
+
+# 🏗️ System Architecture
+
+```
+                    User
+
+                     |
+                     ↓
+
+          GitHub Pages Frontend
+              HTML / CSS / JS
+
+                     |
+                     |
+                REST APIs
+
+                     ↓
+
+             Spring Boot Backend
+                 Java + Maven
+
+                     |
+                     ↓
+
+              Data & Services
+```
+
+---
+
+# 🛠️ Tech Stack
 
 ## Frontend
 
-- HTML5
-- CSS3
-- Vanilla JavaScript
-- Bootstrap 5
-- Monaco Editor
-
-## APIs
-
-- GitHub REST API
-- GitHub OAuth
+| Technology   | Purpose                              |
+| ------------ | ------------------------------------ |
+| HTML5        | Application structure                |
+| CSS3         | Styling and UI design                |
+| JavaScript   | Frontend logic and API communication |
+| GitHub Pages | Frontend deployment                  |
 
 ---
 
-# 📁 Project Structure
+## Backend
+
+| Technology       | Purpose                          |
+| ---------------- | -------------------------------- |
+| Java             | Backend development              |
+| Spring Boot      | REST API development             |
+| Maven            | Dependency management            |
+| JWT              | Authentication and authorization |
+| GitHub OAuth 2.0 | User authentication              |
+
+---
+
+## Deployment
+
+| Technology     | Purpose                   |
+| -------------- | ------------------------- |
+| GitHub         | Version control           |
+| GitHub Actions | CI/CD deployment workflow |
+| GitHub Pages   | Frontend hosting          |
+| Render         | Backend cloud hosting     |
+
+---
+
+# 🔄 Authentication Flow
+
+```
+User
+ |
+ ↓
+GreenGrid Frontend
+ |
+ ↓
+GitHub OAuth Login
+ |
+ ↓
+GitHub Authorization
+ |
+ ↓
+Spring Boot Callback API
+ |
+ ↓
+Generate JWT Tokens
+ |
+ ↓
+Authenticated Dashboard
+```
+
+---
+
+# 📂 Project Structure
 
 ```
 GreenGrid
+
+├── frontend
+│   ├── html pages
+│   ├── css
+│   ├── javascript
+│   └── assets
 │
 ├── backend
-│   ├── src
-│   ├── pom.xml
-│   └── ...
-│
-├── frontend
-│   ├── css
-│   ├── js
-│   ├── assets
-│   └── index.html
+│   ├── controllers
+│   ├── services
+│   ├── security
+│   ├── models
+│   └── configuration
 │
 └── README.md
 ```
 
 ---
 
-# 🚀 Getting Started
+# 🌐 Live Deployment
 
-## Clone the Repository
+### Frontend
 
-```bash
-git clone https://github.com/YOUR_USERNAME/GreenGrid.git
-cd GreenGrid
-```
+🔗 https://varsha-98948.github.io/GreenGrid/
 
----
+### Backend API
 
-## Backend Setup
-
-Navigate to the backend directory.
-
-```bash
-cd backend
-```
-
-Configure your environment variables.
-
-```properties
-DATABASE_URL=
-DATABASE_USERNAME=
-DATABASE_PASSWORD=
-
-JWT_SECRET=
-TOKEN_ENCRYPTION_KEY=
-
-GITHUB_CLIENT_ID=
-GITHUB_CLIENT_SECRET=
-GITHUB_REDIRECT_URI=
-
-FRONTEND_URL=
-```
-
-Run the application.
-
-```bash
-mvn spring-boot:run -Dspring-boot.run.profiles=dev
-```
-
-Flyway will automatically create the database schema during startup.
+🔗 https://greengrid-byh0.onrender.com
 
 ---
 
-## Frontend Setup
+# 🤝 Contribution
 
-Navigate to the frontend directory.
+GreenGrid is built around the idea that every contribution matters.
 
-```bash
-cd frontend
-```
-
-Update the backend URL inside:
-
-```
-js/config.js
-```
-
-Run any static web server.
-
-Example:
-
-```bash
-python -m http.server 5500
-```
-
-or
-
-```bash
-npx serve .
-```
-
----
-
-# 🔒 Security
-
-GreenGrid follows several security best practices:
-
-- JWT Authentication
-- GitHub OAuth 2.0
-- AES Encryption for GitHub Access Tokens
-- Password Hashing (BCrypt)
-- Spring Security
-- Protected REST APIs
-- Database validation using Flyway migrations
-
----
-
-# 🛣️ Roadmap
-
-## ✅ Version 1
-
-- User Authentication
-- GitHub OAuth
-- Repository Management
-- Problem Management
-- Dashboard
-- Search & Filters
-- Contribution Calendar
-- Revision Tracker
-
-## 🚧 Planned Improvements
-
-- Single Git commit per problem (Git Data API)
-- AI-generated solution summaries
-- AI hints
-- Multi-platform import (LeetCode, Codeforces, GFG)
-- Daily challenge reminders
-- Repository statistics
-- Team workspaces
-- Public profile pages
-
----
-
-# 🤝 Contributing
-
-Contributions, suggestions, and feature requests are welcome.
-
-If you'd like to improve GreenGrid:
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Open a Pull Request
+Whether it is solving a problem, fixing a bug, improving documentation, or adding a feature — every improvement becomes another piece of the bigger picture.
 
 ---
 
@@ -230,8 +198,14 @@ If you'd like to improve GreenGrid:
 
 **Varsha Jairam**
 
-GitHub: https://github.com/Varsha-98948
+## ⭐ Why GreenGrid?
 
----
+A developer's journey cannot be measured by a single number.
 
-> **GreenGrid aims to make every solved problem part of your developer portfolio—not just another submission.**
+It is built from thousands of small achievements.
+
+**Every problem solved.
+Every project built.
+Every contribution made.**
+
+🧩 Every piece matters.
