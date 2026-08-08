@@ -2,14 +2,17 @@
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Signing you in — GreenGrid</title>
 <link href="css/styles.css" rel="stylesheet">
 </head>
 <body>
+
 <div class="gg-auth-wrap">
-  <div class="text-center">
-    <div class="spinner-border" style="color: var(--accent);" role="status"></div>
-    <p class="text-muted-gg mt-3">Finishing GitHub sign-in…</p>
+  <div class="text-center" style="z-index:1;">
+    <div class="gg-spinner mx-auto mb-3" style="width:28px;height:28px;border-width:3px;"></div>
+    <h2 style="font-size:1.1rem;font-weight:600;" class="mb-1">Completing GitHub sign-in…</h2>
+    <p class="text-muted-gg mb-0" style="font-size:.85rem;">Redirecting to your workspace shortly.</p>
   </div>
 </div>
 
@@ -30,16 +33,36 @@
     localStorage.setItem('gg_access_token', accessToken);
     localStorage.setItem('gg_refresh_token', refreshToken);
 
+    // Parse JWT claim to set user object immediately
+    let userId = null, email = null, displayName = '';
+    try {
+      const payloadBase64 = accessToken.split('.')[1];
+      const decoded = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
+      userId = decoded.sub;
+      email = decoded.email;
+      displayName = email ? email.split('@')[0] : 'User';
+    } catch {}
+
+    localStorage.setItem('gg_user', JSON.stringify({
+      userId,
+      email,
+      displayName,
+      onboardingCompleted,
+    }));
+
+    // Fetch account profile asynchronously to fill exact display name if needed
     try {
       const account = await GGApi.get('/api/settings/account');
-      localStorage.setItem('gg_user', JSON.stringify({
-        userId: account.data.userId,
-        email: account.data.email,
-        displayName: account.data.displayName,
-        onboardingCompleted,
-      }));
+      if (account?.data) {
+        localStorage.setItem('gg_user', JSON.stringify({
+          userId: account.data.userId,
+          email: account.data.email,
+          displayName: account.data.displayName,
+          onboardingCompleted,
+        }));
+      }
     } catch {
-      // Non-fatal — the shell will still render with a blank name.
+      // Non-fatal
     }
 
     window.location.href = onboardingCompleted ? 'dashboard.html' : 'onboarding.html';

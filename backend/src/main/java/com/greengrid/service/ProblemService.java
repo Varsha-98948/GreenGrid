@@ -109,8 +109,14 @@ public class ProblemService {
     }
 
     private void pushToGitHub(UUID userId, Problem problem) {
+        var optRepo = repositoryService.findActiveRepository(userId);
+        if (optRepo.isEmpty()) {
+            log.warn("GitHub push skipped for problem {}: No repository selected yet", problem.getId());
+            problem.setCommitStatus("FAILED");
+            return;
+        }
         try {
-            GitRepository repository = repositoryService.getActiveRepository(userId);
+            GitRepository repository = optRepo.get();
             String sha = commitService.commitProblem(userId, repository, problem);
             problem.setLastCommitSha(sha);
             problem.setCommitStatus("COMMITTED");

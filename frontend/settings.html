@@ -3,60 +3,94 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Manage your GreenGrid account settings, theme, and GitHub integration.">
 <title>Settings — GreenGrid</title>
 <link href="css/styles.css" rel="stylesheet">
 </head>
 <body>
 
 <div id="gg-page">
-  <h3 class="mb-4">Settings</h3>
+  <!-- Page header -->
+  <div class="gg-page-header">
+    <div>
+      <h1 class="gg-page-title">Settings</h1>
+      <p class="gg-page-subtitle">Manage your account, GitHub integration, and preferences.</p>
+    </div>
+  </div>
 
-  <div class="row g-3">
+  <div class="row g-4">
     <div class="col-lg-7">
-      <div class="gg-card mb-3">
-        <h6 class="mb-3">Account</h6>
-        <div class="mb-2"><span class="text-muted-gg" style="font-size:.8rem;">Name</span><div id="acc-name">—</div></div>
-        <div class="mb-0"><span class="text-muted-gg" style="font-size:.8rem;">Email</span><div id="acc-email" class="mono" style="font-size:.9rem;">—</div></div>
+
+      <!-- Account Info -->
+      <div class="gg-card mb-4">
+        <div class="gg-section-title">Account Profile</div>
+        <div class="d-flex align-items-center gap-3 mb-4">
+          <div class="gg-avatar" id="acc-avatar" style="width:48px;height:48px;font-size:1.2rem;border-radius:12px;">?</div>
+          <div>
+            <div id="acc-name" style="font-weight:700;font-size:1.05rem;color:var(--text-primary);">Loading…</div>
+            <div id="acc-email" class="mono text-muted-gg" style="font-size:.84rem;">—</div>
+          </div>
+        </div>
       </div>
 
-      <div class="gg-card mb-3">
+      <!-- GitHub Connection -->
+      <div class="gg-card mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <h6 class="mb-0">GitHub Connection</h6>
-          <span class="badge-gg badge-neutral" id="github-badge">checking…</span>
+          <div class="gg-section-title mb-0">GitHub Connection</div>
+          <span class="badge-gg badge-neutral" id="github-badge">Checking…</span>
         </div>
-        <p class="text-muted-gg mb-3" style="font-size:.85rem;" id="github-detail"></p>
-        <button class="btn btn-gg-outline" id="reconnect-btn">Reconnect GitHub</button>
-      </div>
-
-      <div class="gg-card mb-3">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h6 class="mb-0">Repository</h6>
-        </div>
-        <p class="text-muted-gg mb-3" style="font-size:.85rem;" id="repo-detail">Loading…</p>
-        <a href="onboarding.html" class="btn btn-gg-outline">Change Repository</a>
-      </div>
-
-      <div class="gg-card mb-3">
-        <h6 class="mb-3">Appearance</h6>
-        <div class="d-flex gap-2">
-          <button class="btn btn-gg-outline" id="theme-dark-btn">Dark</button>
-          <button class="btn btn-gg-outline" id="theme-light-btn">Light</button>
-        </div>
-      </div>
-
-      <div class="gg-card mb-3">
-        <h6 class="mb-3">Export Data</h6>
-        <p class="text-muted-gg mb-3" style="font-size:.85rem;">Download every problem you've saved as a JSON file.</p>
-        <button class="btn btn-gg-outline" id="export-btn">Export as JSON</button>
-      </div>
-
-      <div class="gg-card" style="border-color: var(--danger);">
-        <h6 class="mb-2" style="color: var(--danger);">Danger Zone</h6>
-        <p class="text-muted-gg mb-3" style="font-size:.85rem;">
-          Deletes your GreenGrid account and all saved data. Your GitHub repository and its commit history are never touched.
+        <p class="text-secondary-gg mb-4" style="font-size:.88rem;line-height:1.5;" id="github-detail">
+          Checking connection status…
         </p>
-        <button class="btn btn-gg-danger" id="delete-account-btn">Delete Account</button>
+        <button class="btn-gg-outline" id="reconnect-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+          Reconnect GitHub
+        </button>
       </div>
+
+      <!-- Repository -->
+      <div class="gg-card mb-4">
+        <div class="gg-section-title">Repository Settings</div>
+        <p class="text-secondary-gg mb-4" style="font-size:.88rem;line-height:1.5;" id="repo-detail">
+          Loading repository info…
+        </p>
+        <a href="onboarding.html" class="btn-gg-outline">Change Target Repository</a>
+      </div>
+
+      <!-- Appearance -->
+      <div class="gg-card mb-4">
+        <div class="gg-section-title">Appearance</div>
+        <p class="text-muted-gg mb-3" style="font-size:.84rem;">Select your preferred color theme.</p>
+        <div class="gg-theme-toggle">
+          <button class="gg-theme-pill" id="theme-dark-btn">Dark</button>
+          <button class="gg-theme-pill" id="theme-light-btn">Light</button>
+        </div>
+      </div>
+
+      <!-- Export Data -->
+      <div class="gg-card mb-4">
+        <div class="gg-section-title">Data Export</div>
+        <p class="text-secondary-gg mb-3" style="font-size:.88rem;">
+          Download a full backup of all your saved problems and notes as a JSON file.
+        </p>
+        <button class="btn-gg-outline" id="export-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Export Data JSON
+        </button>
+      </div>
+
+      <!-- Danger Zone -->
+      <div class="gg-card" style="border-color:var(--danger-border);background:rgba(229,98,106,0.03);">
+        <div class="gg-section-title text-danger-gg">Danger Zone</div>
+        <p class="text-secondary-gg mb-4" style="font-size:.88rem;line-height:1.5;">
+          Permanently delete your GreenGrid account and all saved problem records. Your GitHub repository and existing commits will remain untouched.
+        </p>
+        <button class="btn-gg-danger" id="delete-account-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          Delete Account
+        </button>
+      </div>
+
     </div>
   </div>
 </div>
@@ -68,44 +102,52 @@
 <script>
   GGShell.render('settings');
 
+  // Theme toggle handling
   const currentTheme = localStorage.getItem('gg_theme') || 'dark';
-  function highlightThemeBtn() {
-    document.getElementById('theme-dark-btn').classList.toggle('active', currentTheme === 'dark');
-    document.getElementById('theme-light-btn').classList.toggle('active', currentTheme === 'light');
+  function updateThemeButtons() {
+    const isDark = (localStorage.getItem('gg_theme') || 'dark') === 'dark';
+    document.getElementById('theme-dark-btn').classList.toggle('active', isDark);
+    document.getElementById('theme-light-btn').classList.toggle('active', !isDark);
   }
-  highlightThemeBtn();
+  updateThemeButtons();
 
   async function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('gg_theme', theme);
+    updateThemeButtons();
     try { await GGApi.patch('/api/settings/theme', { theme }); } catch {}
   }
-  document.getElementById('theme-dark-btn').addEventListener('click', () => { setTheme('dark'); location.reload(); });
-  document.getElementById('theme-light-btn').addEventListener('click', () => { setTheme('light'); location.reload(); });
+  document.getElementById('theme-dark-btn').addEventListener('click', () => setTheme('dark'));
+  document.getElementById('theme-light-btn').addEventListener('click', () => setTheme('light'));
 
+  // Load account info
   async function loadAccount() {
+    GGShell.progress.show();
     try {
       const res = await GGApi.get('/api/settings/account');
       const a = res.data;
-      document.getElementById('acc-name').textContent = a.displayName;
-      document.getElementById('acc-email').textContent = a.email;
+      document.getElementById('acc-name').textContent = a.displayName || 'Developer';
+      document.getElementById('acc-email').textContent = a.email || '—';
+      document.getElementById('acc-avatar').textContent = (a.displayName || '?').charAt(0).toUpperCase();
 
       const badge = document.getElementById('github-badge');
       if (a.githubConnected) {
         badge.textContent = 'Connected';
         badge.className = 'badge-gg badge-status-committed';
-        document.getElementById('github-detail').textContent = `Connected as @${a.githubUsername}`;
+        document.getElementById('github-detail').textContent = `Connected to GitHub as @${a.githubUsername}`;
       } else {
         badge.textContent = 'Not connected';
         badge.className = 'badge-gg badge-status-failed';
-        document.getElementById('github-detail').textContent = 'Connect your GitHub account to start committing solutions.';
+        document.getElementById('github-detail').textContent = 'Connect your GitHub account to enable automatic commits.';
       }
 
       document.getElementById('repo-detail').textContent = a.repositoryConnected
         ? `Active repository: ${a.repositoryFullName}`
-        : 'No repository selected yet.';
+        : 'No repository selected yet. Choose one to start committing solutions.';
     } catch (err) {
       GGToast.error(err);
+    } finally {
+      GGShell.progress.done();
     }
   }
 
@@ -120,16 +162,18 @@
     try {
       const res = await GGApi.get('/api/settings/export');
       const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = 'greengrid-export.json';
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = 'greengrid-export.json';
       a.click();
       URL.revokeObjectURL(url);
+      GGToast.success('Export downloaded!');
     } catch (err) { GGToast.error(err); }
   });
 
   document.getElementById('delete-account-btn').addEventListener('click', async () => {
-    if (!confirm('This permanently deletes your GreenGrid account and all saved problems. This cannot be undone. Continue?')) return;
+    if (!confirm('This permanently deletes your GreenGrid account and all saved problem records. This action cannot be undone.\n\nAre you sure you want to proceed?')) return;
     try {
       await GGApi.delete('/api/settings/account');
       GGAuth.clearSession();

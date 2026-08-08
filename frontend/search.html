@@ -3,26 +3,39 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Search and filter your solved coding problems in GreenGrid.">
 <title>Search — GreenGrid</title>
 <link href="css/styles.css" rel="stylesheet">
 </head>
 <body>
 
 <div id="gg-page">
-  <h3 class="mb-4">Search Problems</h3>
+  <!-- Page header -->
+  <div class="gg-page-header">
+    <div>
+      <h1 class="gg-page-title">Search Problems</h1>
+      <p class="gg-page-subtitle">Filter and review everything you've solved.</p>
+    </div>
+    <a href="problem-form.html" class="btn-gg-primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      Add Problem
+    </a>
+  </div>
 
+  <!-- Filter card -->
   <div class="gg-card mb-4">
+    <div class="gg-section-title">Filters</div>
     <div class="row g-3">
       <div class="col-md-3">
-        <label class="form-label-gg">Title</label>
+        <label class="form-label-gg" for="f-title">Title</label>
         <input type="text" class="form-control-gg" id="f-title" placeholder="Two Sum">
       </div>
       <div class="col-md-3">
-        <label class="form-label-gg">Topic</label>
+        <label class="form-label-gg" for="f-topic">Topic</label>
         <input type="text" class="form-control-gg" id="f-topic" placeholder="Dynamic Programming">
       </div>
       <div class="col-md-2">
-        <label class="form-label-gg">Difficulty</label>
+        <label class="form-label-gg" for="f-difficulty">Difficulty</label>
         <select class="form-select-gg" id="f-difficulty">
           <option value="">Any</option>
           <option value="EASY">Easy</option>
@@ -31,31 +44,44 @@
         </select>
       </div>
       <div class="col-md-2">
-        <label class="form-label-gg">Language</label>
-        <input type="text" class="form-control-gg" id="f-language" placeholder="Java">
+        <label class="form-label-gg" for="f-language">Language</label>
+        <!-- Populated from constants.js with "Any" prepended -->
+        <select class="form-select-gg" id="f-language"></select>
       </div>
       <div class="col-md-2">
-        <label class="form-label-gg">Platform</label>
+        <label class="form-label-gg" for="f-platform">Platform</label>
         <input type="text" class="form-control-gg" id="f-platform" placeholder="LeetCode">
       </div>
       <div class="col-md-3">
-        <label class="form-label-gg">Solved Date</label>
+        <label class="form-label-gg" for="f-date">Solved Date</label>
         <input type="date" class="form-control-gg" id="f-date">
       </div>
-      <div class="col-md-3 d-flex align-items-end">
-        <button class="btn btn-gg-primary w-100" id="search-btn">Search</button>
-      </div>
-      <div class="col-md-3 d-flex align-items-end">
-        <button class="btn btn-gg-outline w-100" id="clear-btn">Clear filters</button>
+      <div class="col-md-3 d-flex align-items-end gap-2">
+        <button class="btn-gg-primary" id="search-btn" style="flex:1;">Search</button>
+        <button class="btn-gg-outline" id="clear-btn">Clear</button>
       </div>
     </div>
   </div>
 
+  <!-- Results count -->
+  <div class="d-flex justify-content-between align-items-center mb-3" id="results-header" style="display:none!important;">
+    <span class="text-muted-gg" style="font-size:.82rem;" id="results-count"></span>
+  </div>
+
+  <!-- Results -->
   <div id="results"></div>
-  <div class="d-flex justify-content-between align-items-center mt-3" id="pagination" style="display:none !important;">
-    <button class="btn btn-gg-outline" id="prev-btn">Previous</button>
-    <span class="text-muted-gg mono" id="page-label" style="font-size:.82rem;"></span>
-    <button class="btn btn-gg-outline" id="next-btn">Next</button>
+
+  <!-- Pagination -->
+  <div class="d-flex justify-content-between align-items-center mt-4" id="pagination" style="display:none!important;">
+    <button class="btn-gg-outline" id="prev-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+      Previous
+    </button>
+    <span class="mono text-muted-gg" id="page-label" style="font-size:.8rem;"></span>
+    <button class="btn-gg-outline" id="next-btn">
+      Next
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
   </div>
 </div>
 
@@ -63,106 +89,183 @@
 <script src="js/api.js"></script>
 <script src="js/toast.js"></script>
 <script src="js/shell.js"></script>
+<script src="js/constants.js"></script>
 <script>
   GGShell.render('search');
 
-  let currentPage = 0;
-  let totalPages = 1;
+  // Populate language filter dropdown (with "Any" option)
+  GG_LANGUAGES.populate(document.getElementById('f-language'), { includeAny: true });
 
+  // ---- State ---------------------------------------------------------------
+  let currentPage = 0;
+  let totalPages  = 1;
+  let totalItems  = 0;
+  let debounceTimer;
+
+  // ---- Query builder -------------------------------------------------------
   function buildQuery() {
     const params = new URLSearchParams();
-    const title = document.getElementById('f-title').value.trim();
-    const topic = document.getElementById('f-topic').value.trim();
-    const difficulty = document.getElementById('f-difficulty').value;
-    const language = document.getElementById('f-language').value.trim();
+    const title    = document.getElementById('f-title').value.trim();
+    const topic    = document.getElementById('f-topic').value.trim();
+    const diff     = document.getElementById('f-difficulty').value;
+    const language = document.getElementById('f-language').value;
     const platform = document.getElementById('f-platform').value.trim();
-    const date = document.getElementById('f-date').value;
+    const date     = document.getElementById('f-date').value;
 
-    if (title) params.set('title', title);
-    if (topic) params.set('topic', topic);
-    if (difficulty) params.set('difficulty', difficulty);
-    if (language) params.set('language', language);
-    if (platform) params.set('platform', platform);
-    if (date) params.set('date', date);
+    if (title)    params.set('title',      title);
+    if (topic)    params.set('topic',      topic);
+    if (diff)     params.set('difficulty', diff);
+    if (language) params.set('language',   language);
+    if (platform) params.set('platform',   platform);
+    if (date)     params.set('date',       date);
     params.set('page', currentPage);
     params.set('size', 12);
     return params.toString();
   }
 
-  const DIFF_BADGE = { EASY: 'badge-easy', MEDIUM: 'badge-medium', HARD: 'badge-hard' };
+  const DIFF_BADGE  = { EASY: 'badge-easy', MEDIUM: 'badge-medium', HARD: 'badge-hard' };
+  const DIFF_LABEL  = { EASY: 'Easy',       MEDIUM: 'Medium',       HARD: 'Hard' };
+  const REVISION_OPTS = [
+    { value: 'NONE',           label: 'Not set' },
+    { value: 'NEEDS_REVISION', label: 'Needs revision' },
+    { value: 'MASTERED',       label: 'Mastered' },
+  ];
 
+  // ---- Render a single problem card ----------------------------------------
+  function renderCard(p) {
+    const revOptions = REVISION_OPTS.map(o =>
+      `<option value="${o.value}" ${p.revisionStatus === o.value ? 'selected' : ''}>${o.label}</option>`
+    ).join('');
+
+    const topicsHtml = p.topics.length
+      ? p.topics.map(t => `<span class="badge-gg badge-neutral">${t}</span>`).join('')
+      : '';
+
+    return `
+      <div class="gg-problem-card" data-id="${p.id}">
+        <div class="d-flex justify-content-between align-items-start gap-3">
+          <div style="min-width:0;flex:1;">
+            <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+              ${p.problemUrl
+                ? `<a href="${p.problemUrl}" target="_blank" rel="noopener" class="gg-problem-title" style="color:var(--text-primary);">${p.title} <span style="color:var(--text-muted);font-size:.72rem;">↗</span></a>`
+                : `<span class="gg-problem-title">${p.title}</span>`}
+              <span class="badge-gg ${DIFF_BADGE[p.difficulty]}">${DIFF_LABEL[p.difficulty]}</span>
+              ${p.favorite ? '<span title="Favourite" style="color:var(--warning);font-size:.9rem;" aria-label="Favourite">★</span>' : ''}
+            </div>
+            <div class="gg-problem-meta">
+              ${p.platform} · ${p.language} · ${p.solvedDate}
+            </div>
+            ${topicsHtml ? `<div class="d-flex flex-wrap gap-1 mt-2">${topicsHtml}</div>` : ''}
+          </div>
+          <div class="d-flex gap-2 align-items-center flex-shrink-0">
+            <span class="badge-gg badge-status-${p.commitStatus.toLowerCase()}">${p.commitStatus}</span>
+            <button class="btn-gg-icon fav-btn" title="${p.favorite ? 'Remove from favourites' : 'Add to favourites'}" aria-label="Toggle favourite">
+              ${p.favorite ? '★' : '☆'}
+            </button>
+            <button class="btn-gg-icon delete-btn" title="Delete problem" aria-label="Delete">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Revision + commit SHA -->
+        <div class="d-flex align-items-center gap-3 flex-wrap mt-3 pt-3" style="border-top:1px solid var(--border-soft);">
+          <div class="d-flex align-items-center gap-2">
+            <label class="text-muted-gg" style="font-size:.76rem;white-space:nowrap;">Revision:</label>
+            <select class="form-select-gg revision-select" style="width:auto;padding:4px 28px 4px 10px;font-size:.78rem;">${revOptions}</select>
+          </div>
+          ${p.lastCommitSha ? `<span class="gg-sha ms-auto">${p.lastCommitSha.substring(0,7)}</span>` : ''}
+        </div>
+      </div>`;
+  }
+
+  // ---- Skeleton loading grid -----------------------------------------------
+  function renderSkeletons(n = 6) {
+    return Array.from({ length: n }, () =>
+      `<div class="gg-skeleton mb-3" style="height:130px;border-radius:14px;"></div>`
+    ).join('');
+  }
+
+  // ---- Main search ---------------------------------------------------------
   async function search() {
     const resultsEl = document.getElementById('results');
-    resultsEl.innerHTML = '<p class="text-muted-gg">Searching…</p>';
+    resultsEl.innerHTML = renderSkeletons();
+    document.getElementById('pagination').style.setProperty('display', 'none', 'important');
+    document.getElementById('results-header').style.setProperty('display', 'none', 'important');
+
+    GGShell.progress.show();
     try {
-      const res = await GGApi.get('/api/problems/search?' + buildQuery());
+      const res  = await GGApi.get('/api/problems/search?' + buildQuery());
       const page = res.data;
       totalPages = page.totalPages;
+      totalItems = page.totalElements;
 
       if (page.content.length === 0) {
-        resultsEl.innerHTML = '<div class="gg-card text-center py-5"><p class="text-muted-gg mb-0">No problems match these filters.</p></div>';
-        document.getElementById('pagination').style.setProperty('display', 'none', 'important');
+        const hasFilters = buildQuery().replace(/page=\d+&size=\d+/, '').length > 0;
+        resultsEl.innerHTML = `
+          <div class="gg-card">
+            <div class="gg-empty-state">
+              <div class="gg-empty-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              </div>
+              <p class="gg-empty-title">${hasFilters ? 'No problems match these filters' : 'No problems yet'}</p>
+              <p class="gg-empty-desc">
+                ${hasFilters
+                  ? 'Try adjusting your filters or clearing them to see all problems.'
+                  : 'Start by adding your first solved problem to GreenGrid.'}
+              </p>
+              ${hasFilters
+                ? `<button class="btn-gg-outline" id="clear-from-empty">Clear filters</button>`
+                : `<a href="problem-form.html" class="btn-gg-primary">Add your first problem</a>`}
+            </div>
+          </div>`;
+        document.getElementById('clear-from-empty')
+          ?.addEventListener('click', clearFilters);
         return;
       }
 
       resultsEl.innerHTML = page.content.map(renderCard).join('');
       bindCardActions();
 
-      document.getElementById('pagination').style.setProperty('display', 'flex', 'important');
-      document.getElementById('page-label').textContent = `page ${currentPage + 1} of ${totalPages}`;
+      // Results header
+      const header = document.getElementById('results-header');
+      header.style.setProperty('display', 'flex', 'important');
+      document.getElementById('results-count').textContent =
+        `${totalItems} problem${totalItems !== 1 ? 's' : ''} · page ${currentPage + 1} of ${totalPages}`;
+
+      // Pagination
+      const pag  = document.getElementById('pagination');
+      pag.style.setProperty('display', 'flex', 'important');
+      document.getElementById('page-label').textContent = `Page ${currentPage + 1} of ${totalPages}`;
       document.getElementById('prev-btn').disabled = currentPage === 0;
       document.getElementById('next-btn').disabled = currentPage >= totalPages - 1;
+
     } catch (err) {
       GGToast.error(err);
+      resultsEl.innerHTML = '';
+    } finally {
+      GGShell.progress.done();
     }
   }
 
-  function renderCard(p) {
-    const revisionOptions = ['NONE', 'NEEDS_REVISION', 'MASTERED'];
-    return `
-    <div class="gg-card mb-3" data-id="${p.id}">
-      <div class="d-flex justify-content-between align-items-start">
-        <div>
-          <div class="d-flex align-items-center gap-2 mb-1">
-            <h6 class="mb-0">${p.title}</h6>
-            <span class="badge-gg ${DIFF_BADGE[p.difficulty]}">${p.difficulty}</span>
-            ${p.favorite ? '<span title="Favorite">⭐</span>' : ''}
-          </div>
-          <div class="text-muted-gg mono" style="font-size:.78rem;">${p.platform} · ${p.language} · ${p.solvedDate}</div>
-          <div class="mt-2 d-flex flex-wrap gap-1">
-            ${p.topics.map(t => `<span class="badge-gg badge-neutral">${t}</span>`).join('')}
-          </div>
-        </div>
-        <div class="d-flex gap-2 align-items-center">
-          <span class="badge-gg badge-status-${p.commitStatus.toLowerCase()}">${p.commitStatus}</span>
-          <button class="btn-gg-icon fav-btn" title="Toggle favorite">${p.favorite ? '★' : '☆'}</button>
-          <button class="btn-gg-icon delete-btn" title="Delete">✕</button>
-        </div>
-      </div>
-      <div class="mt-3 d-flex align-items-center gap-2">
-        <label class="text-muted-gg" style="font-size:.78rem;">Revision:</label>
-        <select class="form-select-gg revision-select" style="width:auto; padding:5px 10px; font-size:.82rem;">
-          ${revisionOptions.map(o => `<option value="${o}" ${p.revisionStatus === o ? 'selected' : ''}>${o.replace('_', ' ')}</option>`).join('')}
-        </select>
-        ${p.problemUrl ? `<a href="${p.problemUrl}" target="_blank" class="text-muted-gg" style="font-size:.8rem; margin-left:auto;">View problem ↗</a>` : ''}
-      </div>
-    </div>`;
-  }
-
+  // ---- Card event bindings -------------------------------------------------
   function bindCardActions() {
+    // Revision status
     document.querySelectorAll('.revision-select').forEach(sel => {
       sel.addEventListener('change', async () => {
         const id = sel.closest('[data-id]').dataset.id;
         try {
           await GGApi.patch(`/api/problems/${id}/revision`, { revisionStatus: sel.value });
-          GGToast.success('Updated');
+          GGToast.success('Revision status updated');
         } catch (err) { GGToast.error(err); }
       });
     });
+
+    // Favourite toggle
     document.querySelectorAll('.fav-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const card = btn.closest('[data-id]');
-        const id = card.dataset.id;
+        const card  = btn.closest('[data-id]');
+        const id    = card.dataset.id;
         const nowFav = btn.textContent.trim() === '☆';
         try {
           await GGApi.patch(`/api/problems/${id}/revision`, { favorite: nowFav });
@@ -170,27 +273,53 @@
         } catch (err) { GGToast.error(err); }
       });
     });
+
+    // Delete
     document.querySelectorAll('.delete-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.closest('[data-id]').dataset.id;
-        if (!confirm('Delete this problem from GreenGrid? (Your GitHub commit history is not affected.)')) return;
+        if (!confirm('Delete this problem from GreenGrid?\n\n(Your GitHub commit history is not affected.)')) return;
         try {
           await GGApi.delete(`/api/problems/${id}`);
-          GGToast.success('Deleted');
+          GGToast.success('Problem deleted');
           search();
         } catch (err) { GGToast.error(err); }
       });
     });
   }
 
-  document.getElementById('search-btn').addEventListener('click', () => { currentPage = 0; search(); });
-  document.getElementById('clear-btn').addEventListener('click', () => {
-    ['f-title','f-topic','f-difficulty','f-language','f-platform','f-date'].forEach(id => document.getElementById(id).value = '');
-    currentPage = 0; search();
-  });
-  document.getElementById('prev-btn').addEventListener('click', () => { if (currentPage > 0) { currentPage--; search(); } });
-  document.getElementById('next-btn').addEventListener('click', () => { if (currentPage < totalPages - 1) { currentPage++; search(); } });
+  // ---- Filter controls -----------------------------------------------------
+  function clearFilters() {
+    ['f-title', 'f-topic', 'f-platform', 'f-date'].forEach(id =>
+      (document.getElementById(id).value = ''));
+    document.getElementById('f-difficulty').value = '';
+    document.getElementById('f-language').value   = '';
+    currentPage = 0;
+    search();
+  }
 
+  // Debounced auto-search on text inputs
+  function debouncedSearch() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => { currentPage = 0; search(); }, 400);
+  }
+
+  ['f-title', 'f-topic', 'f-platform'].forEach(id =>
+    document.getElementById(id).addEventListener('input', debouncedSearch));
+  ['f-difficulty', 'f-language', 'f-date'].forEach(id =>
+    document.getElementById(id).addEventListener('change', () => { currentPage = 0; search(); }));
+
+  document.getElementById('search-btn').addEventListener('click', () => { currentPage = 0; search(); });
+  document.getElementById('clear-btn').addEventListener('click', clearFilters);
+
+  document.getElementById('prev-btn').addEventListener('click', () => {
+    if (currentPage > 0) { currentPage--; search(); }
+  });
+  document.getElementById('next-btn').addEventListener('click', () => {
+    if (currentPage < totalPages - 1) { currentPage++; search(); }
+  });
+
+  // Initial load
   search();
 </script>
 </body>

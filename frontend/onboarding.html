@@ -3,62 +3,86 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Set up GreenGrid</title>
+<meta name="description" content="Set up GreenGrid with your GitHub repository.">
+<title>Set up GreenGrid — GreenGrid</title>
 <link href="css/styles.css" rel="stylesheet">
 </head>
 <body>
 
-<div class="gg-auth-wrap" style="align-items:flex-start; padding-top: 64px;">
+<div class="gg-auth-wrap" style="align-items: flex-start; padding-top: 48px;">
   <div class="commit-grid-bg" id="bg-grid"></div>
+
   <div class="gg-auth-card" style="max-width: 520px;">
-    <div class="gg-logo mb-1" style="padding:0 0 8px;">
+    <!-- Logo -->
+    <div class="gg-auth-logo">
       <span class="gg-logo-mark"><span></span><span></span><span></span><span></span></span>
       GreenGrid
     </div>
 
-    <div class="d-flex align-items-center gap-2 mb-4">
-      <div class="badge-gg" id="step-badge-1" style="background: var(--accent-soft); color: var(--accent);">1. Connect GitHub</div>
-      <div style="width:16px;height:1px;background:var(--border);"></div>
-      <div class="badge-gg badge-neutral" id="step-badge-2">2. Choose repository</div>
+    <!-- Stepper -->
+    <div class="gg-steps">
+      <div class="gg-step-item active" id="step-indicator-1">
+        <div class="gg-step-circle">1</div>
+        <div class="gg-step-label">Connect GitHub</div>
+      </div>
+      <div class="gg-step-item" id="step-indicator-2">
+        <div class="gg-step-circle">2</div>
+        <div class="gg-step-label">Select Repository</div>
+      </div>
     </div>
 
-    <!-- Step 1 -->
+    <!-- Step 1: Connect GitHub -->
     <div id="step-1">
-      <h5 class="mb-2">Connect your GitHub account</h5>
-      <p class="text-secondary-gg mb-4" style="font-size:.9rem;">
-        GreenGrid needs permission to create commits in a repository on your behalf.
-        We only ever touch the one repository you choose next.
+      <h2 style="font-size:1.35rem;font-weight:700;margin-bottom:8px;">Connect your GitHub account</h2>
+      <p class="text-secondary-gg mb-4" style="font-size:.88rem;line-height:1.5;">
+        GreenGrid requires access to manage repository commits on your behalf.
+        We only interact with the specific repository you authorize or create in the next step.
       </p>
-      <button class="btn btn-gg-primary w-100" id="connect-github-btn">Connect GitHub</button>
+      <button class="btn-github w-100 mb-2" id="connect-github-btn" style="justify-content:center;padding:11px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+        </svg>
+        Connect with GitHub
+      </button>
     </div>
 
-    <!-- Step 2 -->
+    <!-- Step 2: Choose repo -->
     <div id="step-2" style="display:none;">
-      <h5 class="mb-2">Where should solutions live?</h5>
-      <p class="text-secondary-gg mb-4" style="font-size:.9rem;">Create a fresh repository, or use one you already have.</p>
+      <h2 style="font-size:1.35rem;font-weight:700;margin-bottom:6px;">Where should solutions live?</h2>
+      <p class="text-secondary-gg mb-4" style="font-size:.88rem;">
+        Choose whether to create a new dedicated repository or select an existing one.
+      </p>
 
-      <ul class="nav nav-pills mb-3" style="gap:8px;">
-        <li class="nav-item">
-          <button class="btn btn-gg-outline active" id="tab-create" style="font-size:.85rem;">Create new</button>
-        </li>
-        <li class="nav-item">
-          <button class="btn btn-gg-outline" id="tab-existing" style="font-size:.85rem;">Use existing</button>
-        </li>
-      </ul>
-
-      <div id="panel-create">
-        <label class="form-label-gg">Repository name</label>
-        <input type="text" class="form-control-gg mb-3" id="repo-name" placeholder="leetcode-solutions" value="coding-problems">
-        <div class="form-check mb-4">
-          <input class="form-check-input" type="checkbox" id="repo-private">
-          <label class="form-check-label text-secondary-gg" for="repo-private" style="font-size:.88rem;">Make it private</label>
-        </div>
-        <button class="btn btn-gg-primary w-100" id="create-repo-btn">Create & continue</button>
+      <!-- Tabs -->
+      <div class="gg-theme-toggle w-100 mb-4" style="padding:4px;">
+        <button class="gg-theme-pill active" id="tab-create" style="flex:1;">Create New Repo</button>
+        <button class="gg-theme-pill" id="tab-existing" style="flex:1;">Use Existing Repo</button>
       </div>
 
+      <!-- Panel: Create New -->
+      <div id="panel-create">
+        <div class="form-group">
+          <label class="form-label-gg" for="repo-name">Repository Name</label>
+          <input type="text" class="form-control-gg" id="repo-name" placeholder="coding-problems" value="coding-problems">
+        </div>
+        <div class="d-flex align-items-center gap-2 mb-4">
+          <input type="checkbox" id="repo-private" style="accent-color:var(--accent);width:16px;height:16px;cursor:pointer;">
+          <label for="repo-private" class="text-secondary-gg" style="font-size:.88rem;cursor:pointer;user-select:none;">
+            Make repository private
+          </label>
+        </div>
+        <button class="btn-gg-primary w-100" id="create-repo-btn" style="justify-content:center;padding:11px;">
+          Create &amp; Continue
+        </button>
+      </div>
+
+      <!-- Panel: Use Existing -->
       <div id="panel-existing" style="display:none;">
-        <div id="repo-list" class="mb-3" style="max-height: 280px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
-          <p class="text-muted-gg" style="font-size:.85rem;">Loading your repositories…</p>
+        <div id="repo-list" class="mb-3" style="max-height: 300px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding-right:4px;">
+          <div class="text-center py-4 text-muted-gg">
+            <div class="gg-spinner mx-auto mb-2"></div>
+            <span>Loading your repositories…</span>
+          </div>
         </div>
       </div>
     </div>
@@ -71,26 +95,28 @@
 <script>
   GGAuth.requireAuth();
 
+  // Populate background grid
   const grid = document.getElementById('bg-grid');
-  for (let i = 0; i < 96; i++) {
+  for (let i = 0; i < 120; i++) {
     const cell = document.createElement('span');
     const r = Math.random();
-    if (r > 0.88) cell.className = 'lit-2'; else if (r > 0.7) cell.className = 'lit-1';
+    if (r > 0.9)       cell.className = 'lit-3';
+    else if (r > 0.78) cell.className = 'lit-2';
+    else if (r > 0.62) cell.className = 'lit-1';
     grid.appendChild(cell);
   }
 
   const step1 = document.getElementById('step-1');
   const step2 = document.getElementById('step-2');
-  const badge1 = document.getElementById('step-badge-1');
-  const badge2 = document.getElementById('step-badge-2');
+  const ind1  = document.getElementById('step-indicator-1');
+  const ind2  = document.getElementById('step-indicator-2');
 
   function showStep2() {
     step1.style.display = 'none';
     step2.style.display = 'block';
-    badge1.className = 'badge-gg badge-neutral';
-    badge2.className = 'badge-gg';
-    badge2.style.background = 'var(--accent-soft)';
-    badge2.style.color = 'var(--accent)';
+    ind1.className = 'gg-step-item completed';
+    ind1.querySelector('.gg-step-circle').innerHTML = '✓';
+    ind2.className = 'gg-step-item active';
   }
 
   async function init() {
@@ -115,7 +141,7 @@
     }
   });
 
-  const tabCreate = document.getElementById('tab-create');
+  const tabCreate   = document.getElementById('tab-create');
   const tabExisting = document.getElementById('tab-existing');
   const panelCreate = document.getElementById('panel-create');
   const panelExisting = document.getElementById('panel-existing');
@@ -130,10 +156,11 @@
   });
 
   document.getElementById('create-repo-btn').addEventListener('click', async (e) => {
-    const btn = e.target;
+    const btn  = e.target;
     const name = document.getElementById('repo-name').value.trim();
-    if (!name) { GGToast.error({ message: 'Please enter a repository name' }); return; }
-    btn.disabled = true; btn.textContent = 'Creating…';
+    if (!name) { GGToast.error({ message: 'Please enter a repository name.' }); return; }
+    btn.disabled    = true;
+    btn.textContent = 'Creating repository…';
     try {
       await GGApi.post('/api/github/repos/create', {
         name, isPrivate: document.getElementById('repo-private').checked,
@@ -141,7 +168,8 @@
       finishOnboarding();
     } catch (err) {
       GGToast.error(err);
-      btn.disabled = false; btn.textContent = 'Create & continue';
+      btn.disabled  = false;
+      btn.textContent = 'Create & Continue';
     }
   });
 
@@ -149,19 +177,23 @@
     const listEl = document.getElementById('repo-list');
     try {
       const res = await GGApi.get('/api/github/repos');
-      if (res.data.length === 0) {
-        listEl.innerHTML = '<p class="text-muted-gg" style="font-size:.85rem;">No repositories found on your GitHub account.</p>';
+      if (!res.data || res.data.length === 0) {
+        listEl.innerHTML = `
+          <div class="gg-empty-state" style="padding:20px 0;">
+            <p class="gg-empty-desc" style="margin:0;">No repositories found in your GitHub account.</p>
+          </div>`;
         return;
       }
       listEl.innerHTML = res.data.map(r => `
-        <button class="gg-card gg-card-tight text-start repo-pick-btn" data-owner="${r.owner}" data-name="${r.name}"
-                style="cursor:pointer; border-color: var(--border);">
+        <button class="gg-card gg-card-tight gg-card-interactive repo-pick-btn text-start w-100"
+                data-owner="${r.owner}" data-name="${r.name}" style="background:var(--bg-elevated);">
           <div class="d-flex justify-content-between align-items-center">
-            <span style="font-weight:600; font-size:.9rem;">${r.fullName}</span>
-            ${r.isPrivate ? '<span class="badge-gg badge-neutral">Private</span>' : ''}
+            <span style="font-weight:600;font-size:.88rem;color:var(--text-primary);">${r.fullName}</span>
+            ${r.isPrivate ? '<span class="badge-gg badge-neutral">Private</span>' : '<span class="badge-gg badge-neutral">Public</span>'}
           </div>
         </button>
       `).join('');
+
       document.querySelectorAll('.repo-pick-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
           btn.disabled = true;
@@ -175,7 +207,10 @@
         });
       });
     } catch (err) {
-      listEl.innerHTML = '<p class="text-muted-gg" style="font-size:.85rem;">Could not load repositories.</p>';
+      listEl.innerHTML = `
+        <div class="gg-empty-state" style="padding:20px 0;">
+          <p class="gg-empty-desc text-danger-gg" style="margin:0;">Could not load repositories.</p>
+        </div>`;
     }
   }
 

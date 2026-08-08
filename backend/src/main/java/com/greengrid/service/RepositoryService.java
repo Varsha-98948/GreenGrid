@@ -79,8 +79,13 @@ public class RepositoryService {
     }
 
     @Transactional(readOnly = true)
+    public java.util.Optional<GitRepository> findActiveRepository(UUID userId) {
+        return gitRepositoryRepository.findByUserId(userId);
+    }
+
+    @Transactional(readOnly = true)
     public GitRepository getActiveRepository(UUID userId) {
-        return gitRepositoryRepository.findByUserId(userId)
+        return findActiveRepository(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No repository selected yet. Please complete onboarding."));
     }

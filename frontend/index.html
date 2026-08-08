@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="GreenGrid automatically commits your solved coding problems directly to your GitHub repository with clean code, notes, and complexity analysis.">
 <title>GreenGrid — Solve problems. Own the commits.</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="css/styles.css" rel="stylesheet">
@@ -10,31 +11,36 @@
 <body>
 
 <header class="container-fluid px-4 py-3 d-flex justify-content-between align-items-center" style="position:relative;z-index:2;">
-  <div class="gg-logo mb-0" style="padding:0;">
+  <a href="index.html" class="gg-logo mb-0" style="padding:0;">
     <span class="gg-logo-mark"><span></span><span></span><span></span><span></span></span>
     GreenGrid
-  </div>
+  </a>
   <div class="d-flex gap-2">
-    <a href="login.html" class="btn btn-gg-outline">Log in</a>
-    <a href="register.html" class="btn btn-gg-primary">Get started</a>
+    <a href="login.html" class="btn-gg-outline">Log in</a>
+    <a href="register.html" class="btn-gg-primary">Get started</a>
   </div>
 </header>
 
-<section class="position-relative" style="padding: 90px 24px 60px; overflow:hidden;">
+<section class="position-relative" style="padding: 80px 24px 60px; overflow:hidden;">
   <div class="commit-grid-bg" id="hero-grid"></div>
-  <div class="container position-relative" style="z-index:1; max-width: 760px;">
-    <div class="badge-gg badge-neutral mb-3 mono">git commit -m "Solve: Two Sum"</div>
-    <h1 class="display-4 mb-3" style="font-size: 3.1rem; line-height: 1.08;">
-      Every problem you solve becomes a <span style="color:var(--accent);">real commit</span>, in your own repo.
+  <div class="container position-relative" style="z-index:1; max-width: 780px;">
+    <div class="badge-gg badge-neutral mb-3 mono" style="font-size:.78rem;">
+      <span style="color:var(--accent);">git</span> commit -m "Solve: Two Sum"
+    </div>
+    <h1 class="display-4 mb-3" style="font-size: 3.1rem; line-height: 1.08; font-weight:700; letter-spacing:-.02em;">
+      Every problem you solve becomes a <span style="color:var(--accent);">real commit</span> in your own repo.
     </h1>
-    <p class="fs-5 text-secondary-gg mb-4" style="max-width: 560px;">
+    <p class="fs-5 text-secondary-gg mb-4" style="max-width: 580px; line-height:1.6;">
       GreenGrid organizes the coding problems you solve — with notes, complexity, and code —
-      and pushes each one straight to your own GitHub repository. No fake contribution graphs.
+      and pushes each solution straight to your own GitHub repository. No fake contribution graphs.
       Every green square is work you actually did.
     </p>
-    <div class="d-flex gap-3">
-      <a href="register.html" class="btn btn-gg-primary btn-lg px-4">Start tracking for free</a>
-      <a href="#how-it-works" class="btn btn-gg-outline btn-lg px-4">See how it works</a>
+    <div class="d-flex gap-3 flex-wrap">
+      <a href="register.html" class="btn-gg-primary px-4 py-3" style="font-size:1rem;">
+        Start tracking for free
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+      <a href="#how-it-works" class="btn-gg-outline px-4 py-3" style="font-size:1rem;">See how it works</a>
     </div>
   </div>
 </section>
@@ -43,29 +49,35 @@
   <div class="row g-4">
     <div class="col-md-4">
       <div class="gg-card h-100">
-        <div class="badge-gg badge-neutral mono mb-3">01</div>
-        <h5>Connect GitHub</h5>
-        <p class="text-secondary-gg mb-0" style="font-size:.92rem;">Authorize GreenGrid once. Create a fresh repository or point it at one you already own — it's yours either way.</p>
+        <div class="badge-gg badge-neutral mono mb-3" style="font-size:.75rem;">01</div>
+        <h2 style="font-size:1.15rem;font-weight:700;margin-bottom:8px;">Connect GitHub</h2>
+        <p class="text-secondary-gg mb-0" style="font-size:.88rem;line-height:1.5;">
+          Authorize GreenGrid once. Create a fresh repository or point it at one you already own — it's yours either way.
+        </p>
       </div>
     </div>
     <div class="col-md-4">
       <div class="gg-card h-100">
-        <div class="badge-gg badge-neutral mono mb-3">02</div>
-        <h5>Solve & save</h5>
-        <p class="text-secondary-gg mb-0" style="font-size:.92rem;">Paste your code, write your approach in Markdown, tag the topic and complexity. Hit save.</p>
+        <div class="badge-gg badge-neutral mono mb-3" style="font-size:.75rem;">02</div>
+        <h2 style="font-size:1.15rem;font-weight:700;margin-bottom:8px;">Solve &amp; Save</h2>
+        <p class="text-secondary-gg mb-0" style="font-size:.88rem;line-height:1.5;">
+          Paste your solution, document your approach in Markdown, tag topics, and specify complexity.
+        </p>
       </div>
     </div>
     <div class="col-md-4">
       <div class="gg-card h-100">
-        <div class="badge-gg badge-neutral mono mb-3">03</div>
-        <h5>GreenGrid commits it</h5>
-        <p class="text-secondary-gg mb-0" style="font-size:.92rem;">A real README, metadata.json, and your solution land in <span class="mono">Easy/Two&nbsp;Sum/</span> — committed and pushed automatically.</p>
+        <div class="badge-gg badge-neutral mono mb-3" style="font-size:.75rem;">03</div>
+        <h2 style="font-size:1.15rem;font-weight:700;margin-bottom:8px;">GreenGrid Commits It</h2>
+        <p class="text-secondary-gg mb-0" style="font-size:.88rem;line-height:1.5;">
+          A structured README, metadata, and solution file land in <code class="gg-sha">Easy/Two Sum/</code> — committed and pushed automatically.
+        </p>
       </div>
     </div>
   </div>
 </section>
 
-<footer class="text-center py-5 text-muted-gg" style="font-size:.85rem;">
+<footer class="text-center py-5 text-muted-gg" style="font-size:.85rem;border-top:1px solid var(--border-soft);">
   Built for developers who'd rather show real work than a green graph that means nothing.
 </footer>
 
@@ -74,7 +86,7 @@
   for (let i = 0; i < 240; i++) {
     const cell = document.createElement('span');
     const r = Math.random();
-    if (r > 0.9) cell.className = 'lit-3';
+    if (r > 0.9)       cell.className = 'lit-3';
     else if (r > 0.78) cell.className = 'lit-2';
     else if (r > 0.62) cell.className = 'lit-1';
     grid.appendChild(cell);
