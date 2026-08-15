@@ -453,24 +453,7 @@
           GGToast.show('Saved, but the GitHub push failed — you can retry from Search.', 'error');
         }
       } else {
-        // Edit existing problem metadata
-        const metaPayload = {
-          platform:       document.getElementById('platform').value,
-          title:          document.getElementById('title').value.trim(),
-          problemUrl:     document.getElementById('problemUrl').value.trim() || null,
-          difficulty:     document.getElementById('difficulty').value,
-          topics:         tags,
-          language:       document.getElementById('language').value,
-          code,
-          notes:          document.getElementById('notes').value,
-          timeComplexity: document.getElementById('timeComplexity').value,
-          spaceComplexity:document.getElementById('spaceComplexity').value,
-          solvedDate:     document.getElementById('solvedDate').value,
-        };
-
-        await GGApi.put(`/api/problems/${problemId}`, metaPayload);
-
-        // Handle revision save/update
+        // Edit existing problem: Send EXACTLY 1 single API request
         const selVal = document.getElementById('revision-select').value;
         const revPayload = {
           title:           document.getElementById('revision-title').value.trim() || null,
@@ -479,18 +462,41 @@
           notes:           document.getElementById('notes').value,
           timeComplexity:  document.getElementById('timeComplexity').value,
           spaceComplexity: document.getElementById('spaceComplexity').value,
+          // Problem metadata fields
+          platform:        document.getElementById('platform').value,
+          problemTitle:    document.getElementById('title').value.trim(),
+          problemUrl:      document.getElementById('problemUrl').value.trim() || null,
+          difficulty:      document.getElementById('difficulty').value,
+          topics:          tags,
+          solvedDate:      document.getElementById('solvedDate').value,
         };
 
         if (selVal === 'NEW') {
           await GGApi.post(`/api/problems/${problemId}/revisions`, revPayload);
           GGToast.success('New revision created & metadata updated!');
-        } else if (selVal !== 'LATEST' && selVal) {
+        } else if (selVal && selVal !== 'LATEST') {
           await GGApi.put(`/api/problems/${problemId}/revisions/${selVal}`, revPayload);
           GGToast.success('Revision & problem metadata updated!');
         } else {
+          // Fallback to update problem endpoint
+          const metaPayload = {
+            platform:       document.getElementById('platform').value,
+            title:          document.getElementById('title').value.trim(),
+            problemUrl:     document.getElementById('problemUrl').value.trim() || null,
+            difficulty:     document.getElementById('difficulty').value,
+            topics:         tags,
+            language:       document.getElementById('language').value,
+            code,
+            notes:          document.getElementById('notes').value,
+            timeComplexity: document.getElementById('timeComplexity').value,
+            spaceComplexity:document.getElementById('spaceComplexity').value,
+            solvedDate:     document.getElementById('solvedDate').value,
+          };
+          await GGApi.put(`/api/problems/${problemId}`, metaPayload);
           GGToast.success('Problem & revision updated!');
         }
       }
+
       window.location.href = 'search.html';
     } catch (err) {
       GGToast.error(err);

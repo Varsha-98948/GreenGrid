@@ -1,6 +1,10 @@
 package com.greengrid.dto.problem;
 
+import com.greengrid.entity.Difficulty;
 import jakarta.validation.constraints.NotBlank;
+
+import java.time.LocalDate;
+import java.util.List;
 
 public record CreateRevisionRequest(
         String title,
@@ -10,5 +14,18 @@ public record CreateRevisionRequest(
         String code,
         String notes,
         String timeComplexity,
-        String spaceComplexity
-) {}
+        String spaceComplexity,
+        // Optional problem metadata fields for single-request update
+        String platform,
+        String problemTitle,
+        String problemUrl,
+        Difficulty difficulty,
+        List<String> topics,
+        LocalDate solvedDate
+) {
+    public CreateRevisionRequest(
+            String title, String language, String code, String notes, String timeComplexity, String spaceComplexity
+    ) {
+        this(title, language, code, notes, timeComplexity, spaceComplexity, null, null, null, null, null, null);
+    }
+}

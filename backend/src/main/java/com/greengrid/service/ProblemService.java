@@ -137,6 +137,27 @@ public class ProblemService {
     @Transactional
     public ProblemResponse createRevision(UUID userId, UUID problemId, CreateRevisionRequest request) {
         Problem problem = getOwned(userId, problemId);
+        User user = problem.getUser();
+
+        // Update problem metadata if provided in request
+        if (request.platform() != null && !request.platform().isBlank()) {
+            problem.setPlatform(request.platform());
+        }
+        if (request.problemTitle() != null && !request.problemTitle().isBlank()) {
+            problem.setTitle(request.problemTitle().trim());
+        }
+        if (request.problemUrl() != null) {
+            problem.setProblemUrl(request.problemUrl().trim());
+        }
+        if (request.difficulty() != null) {
+            problem.setDifficulty(request.difficulty());
+        }
+        if (request.topics() != null) {
+            problem.setTags(resolveTags(user, request.topics()));
+        }
+        if (request.solvedDate() != null) {
+            problem.setSolvedDate(request.solvedDate());
+        }
 
         List<ProblemRevision> existing = problemRevisionRepository.findByProblemIdOrderByRevisionNumberAsc(problemId);
         int nextRevNum = existing.stream().mapToInt(ProblemRevision::getRevisionNumber).max().orElse(0) + 1;
@@ -170,6 +191,28 @@ public class ProblemService {
     @Transactional
     public ProblemResponse updateRevision(UUID userId, UUID problemId, UUID revisionId, CreateRevisionRequest request) {
         Problem problem = getOwned(userId, problemId);
+        User user = problem.getUser();
+
+        // Update problem metadata if provided in request
+        if (request.platform() != null && !request.platform().isBlank()) {
+            problem.setPlatform(request.platform());
+        }
+        if (request.problemTitle() != null && !request.problemTitle().isBlank()) {
+            problem.setTitle(request.problemTitle().trim());
+        }
+        if (request.problemUrl() != null) {
+            problem.setProblemUrl(request.problemUrl().trim());
+        }
+        if (request.difficulty() != null) {
+            problem.setDifficulty(request.difficulty());
+        }
+        if (request.topics() != null) {
+            problem.setTags(resolveTags(user, request.topics()));
+        }
+        if (request.solvedDate() != null) {
+            problem.setSolvedDate(request.solvedDate());
+        }
+
         ProblemRevision revision = problemRevisionRepository.findByIdAndProblemId(revisionId, problemId)
                 .orElseThrow(() -> new ResourceNotFoundException("Revision not found"));
 
@@ -197,6 +240,7 @@ public class ProblemService {
 
         return toResponse(problemRepository.save(problem));
     }
+
 
     @Transactional
     public ProblemResponse retryCommit(UUID userId, UUID problemId) {
