@@ -1,14 +1,12 @@
 package com.greengrid.service;
 
-import com.greengrid.dto.problem.CreateProblemRequest;
-import com.greengrid.dto.problem.ProblemResponse;
-import com.greengrid.dto.problem.RevisionUpdateRequest;
-import com.greengrid.dto.problem.UpdateProblemRequest;
+import com.greengrid.dto.problem.*;
 import com.greengrid.entity.*;
 import com.greengrid.exception.GitHubIntegrationException;
 import com.greengrid.exception.ResourceNotFoundException;
 import com.greengrid.github.CommitService;
 import com.greengrid.repository.ProblemRepository;
+import com.greengrid.repository.ProblemRevisionRepository;
 import com.greengrid.repository.TagRepository;
 import com.greengrid.repository.UserRepository;
 import org.slf4j.Logger;
@@ -19,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -38,15 +37,20 @@ public class ProblemService {
     private static final Logger log = LoggerFactory.getLogger(ProblemService.class);
 
     private final ProblemRepository problemRepository;
+    private final ProblemRevisionRepository problemRevisionRepository;
     private final TagRepository tagRepository;
     private final UserRepository userRepository;
     private final RepositoryService repositoryService;
     private final CommitService commitService;
 
-    public ProblemService(ProblemRepository problemRepository, TagRepository tagRepository,
-                           UserRepository userRepository, RepositoryService repositoryService,
+    public ProblemService(ProblemRepository problemRepository,
+                           ProblemRevisionRepository problemRevisionRepository,
+                           TagRepository tagRepository,
+                           UserRepository userRepository,
+                           RepositoryService repositoryService,
                            CommitService commitService) {
         this.problemRepository = problemRepository;
+        this.problemRevisionRepository = problemRevisionRepository;
         this.tagRepository = tagRepository;
         this.userRepository = userRepository;
         this.repositoryService = repositoryService;
@@ -75,7 +79,21 @@ public class ProblemService {
 
         problem = problemRepository.save(problem);
 
-        pushToGitHub(userId, problem);
+        // Create Revision 1
+        ProblemRevision rev1 = new ProblemRevision();
+        rev1.setProblem(problem);
+        rev1.setRevisionNumber(1);
+        rev1.setTitle("Initial Solution");
+        rev1.setLanguage(request.language());
+        rev1.setCode(request.code());
+        rev1.setNotes(request.notes());
+        rev1.setTimeComplexity(request.timeComplexity());
+        rev1.setSpaceComplexity(request.spaceComplexity());
+        rev1.setCommitStatus("PENDING");
+
+        rev1 = problemRevisionRepository.save(rev1);
+
+        pushToGitHub(userId, problem, rev1);
 
         return toResponse(problemRepository.save(problem));
     }
@@ -89,14 +107,93 @@ public class ProblemService {
         problem.setTitle(request.title());
         problem.setProblemUrl(request.problemUrl());
         problem.setDifficulty(request.difficulty());
-        problem.setLanguage(request.language());
-        problem.setCode(request.code());
+        if (request.language() != null && !request.language().isBlank()) {
+            problem.setLanguage(request.language());
+        }
+        if (request.code() != null && !request.code().isBlank()) {
+            problem.setCode(request.code());
+        }
         problem.setNotes(request.notes());
         problem.setTimeComplexity(request.timeComplexity());
         problem.setSpaceComplexity(request.spaceComplexity());
         problem.setTags(resolveTags(user, request.topics()));
 
-        pushToGitHub(userId, problem);
+        List<ProblemRevision> revisions = problemRevisionRepository.findByProblemIdOrderByRevisionNumberAsc(problemId);
+        ProblemRevision latestRev = revisions.isEmpty() ? null : revisions.get(revisions.size() - 1);
+        if (latestRev != null && request.code() != null && !request.code().isBlank()) {
+            latestRev.setLanguage(request.language());
+            latestRev.setCode(request.code());
+            latestRev.setNotes(request.notes());
+            latestRev.setTimeComplexity(request.timeComplexity());
+            latestRev.setSpaceComplexity(request.spaceComplexity());
+            problemRevisionRepository.save(latestRev);
+        }
+
+        pushToGitHub(userId, problem, latestRev);
+
+        return toResponse(problemRepository.save(problem));
+    }
+
+    @Transactional
+    public ProblemResponse createRevision(UUID userId, UUID problemId, CreateRevisionRequest request) {
+        Problem problem = getOwned(userId, problemId);
+
+        List<ProblemRevision> existing = problemRevisionRepository.findByProblemIdOrderByRevisionNumberAsc(problemId);
+        int nextRevNum = existing.stream().mapToInt(ProblemRevision::getRevisionNumber).max().orElse(0) + 1;
+
+        ProblemRevision revision = new ProblemRevision();
+        revision.setProblem(problem);
+        revision.setRevisionNumber(nextRevNum);
+        revision.setTitle(request.title() != null && !request.title().isBlank()
+                ? request.title().trim()
+                : "Revision " + nextRevNum);
+        revision.setLanguage(request.language());
+        revision.setCode(request.code());
+        revision.setNotes(request.notes());
+        revision.setTimeComplexity(request.timeComplexity());
+        revision.setSpaceComplexity(request.spaceComplexity());
+        revision.setCommitStatus("PENDING");
+
+        revision = problemRevisionRepository.save(revision);
+
+        problem.setLanguage(request.language());
+        problem.setCode(request.code());
+        problem.setNotes(request.notes());
+        problem.setTimeComplexity(request.timeComplexity());
+        problem.setSpaceComplexity(request.spaceComplexity());
+
+        pushToGitHub(userId, problem, revision);
+
+        return toResponse(problemRepository.save(problem));
+    }
+
+    @Transactional
+    public ProblemResponse updateRevision(UUID userId, UUID problemId, UUID revisionId, CreateRevisionRequest request) {
+        Problem problem = getOwned(userId, problemId);
+        ProblemRevision revision = problemRevisionRepository.findByIdAndProblemId(revisionId, problemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Revision not found"));
+
+        if (request.title() != null && !request.title().isBlank()) {
+            revision.setTitle(request.title().trim());
+        }
+        revision.setLanguage(request.language());
+        revision.setCode(request.code());
+        revision.setNotes(request.notes());
+        revision.setTimeComplexity(request.timeComplexity());
+        revision.setSpaceComplexity(request.spaceComplexity());
+
+        revision = problemRevisionRepository.save(revision);
+
+        List<ProblemRevision> existing = problemRevisionRepository.findByProblemIdOrderByRevisionNumberAsc(problemId);
+        if (!existing.isEmpty() && existing.get(existing.size() - 1).getId().equals(revisionId)) {
+            problem.setLanguage(request.language());
+            problem.setCode(request.code());
+            problem.setNotes(request.notes());
+            problem.setTimeComplexity(request.timeComplexity());
+            problem.setSpaceComplexity(request.spaceComplexity());
+        }
+
+        pushToGitHub(userId, problem, revision);
 
         return toResponse(problemRepository.save(problem));
     }
@@ -104,15 +201,21 @@ public class ProblemService {
     @Transactional
     public ProblemResponse retryCommit(UUID userId, UUID problemId) {
         Problem problem = getOwned(userId, problemId);
-        pushToGitHub(userId, problem);
+        List<ProblemRevision> revisions = problemRevisionRepository.findByProblemIdOrderByRevisionNumberAsc(problemId);
+        ProblemRevision latest = revisions.isEmpty() ? null : revisions.get(revisions.size() - 1);
+        pushToGitHub(userId, problem, latest);
         return toResponse(problemRepository.save(problem));
     }
 
-    private void pushToGitHub(UUID userId, Problem problem) {
+    private void pushToGitHub(UUID userId, Problem problem, ProblemRevision revision) {
         var optRepo = repositoryService.findActiveRepository(userId);
         if (optRepo.isEmpty()) {
             log.warn("GitHub push skipped for problem {}: No repository selected yet", problem.getId());
             problem.setCommitStatus("FAILED");
+            if (revision != null) {
+                revision.setCommitStatus("FAILED");
+                problemRevisionRepository.save(revision);
+            }
             return;
         }
         try {
@@ -120,9 +223,19 @@ public class ProblemService {
             String sha = commitService.commitProblem(userId, repository, problem);
             problem.setLastCommitSha(sha);
             problem.setCommitStatus("COMMITTED");
+            if (revision != null) {
+                revision.setLastCommitSha(sha);
+                revision.setRepoFolderPath(problem.getRepoFolderPath());
+                revision.setCommitStatus("COMMITTED");
+                problemRevisionRepository.save(revision);
+            }
         } catch (GitHubIntegrationException | ResourceNotFoundException ex) {
             log.warn("GitHub push failed for problem {}: {}", problem.getId(), ex.getMessage());
             problem.setCommitStatus("FAILED");
+            if (revision != null) {
+                revision.setCommitStatus("FAILED");
+                problemRevisionRepository.save(revision);
+            }
         }
     }
 
@@ -204,12 +317,34 @@ public class ProblemService {
     }
 
     public ProblemResponse toResponse(Problem p) {
+        List<ProblemRevision> revs = problemRevisionRepository.findByProblemIdOrderByRevisionNumberAsc(p.getId());
+        List<ProblemRevisionResponse> revResponses = revs.stream().map(this::toRevisionResponse).toList();
+        int count = revResponses.isEmpty() ? 1 : revResponses.size();
+
         return new ProblemResponse(
                 p.getId(), p.getPlatform(), p.getTitle(), p.getProblemUrl(), p.getDifficulty(),
                 p.getTags().stream().map(Tag::getName).sorted().toList(),
                 p.getLanguage(), p.getCode(), p.getNotes(), p.getTimeComplexity(), p.getSpaceComplexity(),
                 p.getSolvedDate(), p.getRevisionStatus(), p.isFavorite(), p.getRepoFolderPath(),
-                p.getLastCommitSha(), p.getCommitStatus(), p.getCreatedAt()
+                p.getLastCommitSha(), p.getCommitStatus(), p.getCreatedAt(),
+                count, revResponses
+        );
+    }
+
+    private ProblemRevisionResponse toRevisionResponse(ProblemRevision r) {
+        return new ProblemRevisionResponse(
+                r.getId(),
+                r.getRevisionNumber(),
+                r.getTitle(),
+                r.getLanguage(),
+                r.getCode(),
+                r.getNotes(),
+                r.getTimeComplexity(),
+                r.getSpaceComplexity(),
+                r.getRepoFolderPath(),
+                r.getLastCommitSha(),
+                r.getCommitStatus(),
+                r.getCreatedAt() != null ? r.getCreatedAt().atOffset(ZoneOffset.UTC) : null
         );
     }
 }

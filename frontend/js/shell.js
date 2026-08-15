@@ -49,10 +49,11 @@ const GGShell = {
     const displayName = user?.displayName || '';
 
     const navHtml = this.NAV_ITEMS.map(item => `
-      <a href="${item.href}" class="gg-nav-link ${item.key === activeKey ? 'active' : ''}" id="nav-${item.key}">
+      <a href="${item.href}" class="gg-nav-link ${(item.key === activeKey || (item.key === 'add-problem' && activeKey === 'edit-problem')) ? 'active' : ''}" id="nav-${item.key}">
         ${this.ICONS[item.icon]}<span>${item.label}</span>
       </a>
     `).join('');
+
 
     // Capture page content before wiping body
     const pageContent = document.getElementById('gg-page');

@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Add a new coding problem to your GreenGrid repository.">
-<title>Add Problem — GreenGrid</title>
+<meta name="description" content="Add or edit a coding problem and solution revisions in GreenGrid.">
+<title id="page-title">Add Problem — GreenGrid</title>
 <link href="css/styles.css" rel="stylesheet">
 <style>
   #monaco-container {
@@ -42,8 +42,8 @@
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         Dashboard
       </a>
-      <h1 class="gg-page-title">Add Problem</h1>
-      <p class="gg-page-subtitle">Save your solution and commit it to GitHub automatically.</p>
+      <h1 class="gg-page-title" id="form-heading">Add Problem</h1>
+      <p class="gg-page-subtitle" id="form-subheading">Save your solution and commit it to GitHub automatically.</p>
     </div>
     <span class="text-accent mono" id="fetch-status" style="font-size:.78rem;margin-top:8px;"></span>
   </div>
@@ -100,6 +100,21 @@
           </div>
         </div>
 
+        <!-- Revisions card (shown only in Edit mode) -->
+        <div class="gg-card mb-3" id="revision-card" style="display:none;">
+          <div class="gg-section-title">Solution Revision</div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label-gg" for="revision-select">Select Solution Revision</label>
+              <select class="form-select-gg" id="revision-select"></select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-gg" for="revision-title">Revision Title / Label</label>
+              <input type="text" class="form-control-gg" id="revision-title" placeholder="e.g. HashMap Approach">
+            </div>
+          </div>
+        </div>
+
         <!-- Code editor card -->
         <div class="gg-card mb-3">
           <div class="gg-code-header">
@@ -146,7 +161,7 @@
         <div class="gg-card">
           <button type="submit" class="btn-gg-primary w-100 mb-3" id="save-btn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
-            Save &amp; Commit to GitHub
+            <span id="save-btn-text">Save &amp; Commit to GitHub</span>
           </button>
           <p class="text-muted-gg" style="font-size:.76rem;line-height:1.5;">
             Will commit to
@@ -160,7 +175,7 @@
   </form>
 </div>
 
-<!-- Monaco loader (async — does not block page render) -->
+<!-- Monaco loader -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js" defer></script>
 <script src="js/config.js"></script>
 <script src="js/api.js"></script>
@@ -168,7 +183,19 @@
 <script src="js/shell.js"></script>
 <script src="js/constants.js"></script>
 <script>
-  GGShell.render('add-problem');
+  const urlParams = new URLSearchParams(window.location.search);
+  const problemId = urlParams.get('id');
+  const isEditMode = Boolean(problemId);
+
+  GGShell.render(isEditMode ? 'edit-problem' : 'add-problem');
+
+  if (isEditMode) {
+    document.getElementById('page-title').textContent = 'Edit Problem — GreenGrid';
+    document.getElementById('form-heading').textContent = 'Edit Problem & Revisions';
+    document.getElementById('form-subheading').textContent = 'Update problem metadata, edit existing solution revisions, or save a new revision.';
+    document.getElementById('revision-card').style.display = 'block';
+    document.getElementById('save-btn-text').textContent = 'Save Changes & Commit';
+  }
 
   // ---- Populate language dropdown from constants -------------------------
   GG_LANGUAGES.populate(document.getElementById('language'), { selected: 'Java' });
@@ -176,11 +203,12 @@
   // ---- Set today's date --------------------------------------------------
   document.getElementById('solvedDate').valueAsDate = new Date();
 
-  // ---- Monaco: load asynchronously after shell renders -------------------
+  // ---- Monaco: load asynchronously ---------------------------------------
   let editor = null;
+  let problemData = null;
+  let currentRevisions = [];
 
   function initMonaco() {
-    // If loader script hasn't arrived yet, wait
     if (typeof require === 'undefined') {
       setTimeout(initMonaco, 100);
       return;
@@ -209,10 +237,13 @@
       placeholder.style.display = 'none';
       container.style.display   = 'block';
       updateEditorLangLabel();
+
+      if (isEditMode) {
+        loadExistingProblem();
+      }
     });
   }
 
-  // Start loading after the shell renders (non-blocking)
   requestIdleCallback ? requestIdleCallback(initMonaco) : setTimeout(initMonaco, 0);
 
   function updateEditorLangLabel() {
@@ -248,7 +279,7 @@
   // ---- Path preview ------------------------------------------------------
   function updatePathPreview() {
     const diff      = document.getElementById('difficulty');
-    const diffLabel = diff.options[diff.selectedIndex].text;
+    const diffLabel = diff.options[diff.selectedIndex]?.text || 'Easy';
     const title     = document.getElementById('title').value.trim() || 'Problem Title';
     document.getElementById('path-preview').textContent = `${diffLabel}/${title}/`;
   }
@@ -256,7 +287,108 @@
   document.getElementById('title').addEventListener('input', updatePathPreview);
   updatePathPreview();
 
-  // ---- LeetCode auto-fetch (debounced) -----------------------------------
+  // ---- Load existing problem in edit mode -------------------------------
+  async function loadExistingProblem() {
+    GGShell.progress.show();
+    try {
+      const res = await GGApi.get('/api/problems/' + problemId);
+      problemData = res.data;
+
+      document.getElementById('title').value          = problemData.title || '';
+      document.getElementById('platform').value       = problemData.platform || 'LeetCode';
+      document.getElementById('problemUrl').value     = problemData.problemUrl || '';
+      document.getElementById('difficulty').value     = problemData.difficulty || 'EASY';
+      document.getElementById('timeComplexity').value = problemData.timeComplexity || '';
+      document.getElementById('spaceComplexity').value= problemData.spaceComplexity || '';
+      document.getElementById('notes').value           = problemData.notes || '';
+      if (problemData.solvedDate) {
+        document.getElementById('solvedDate').value  = problemData.solvedDate;
+      }
+      tags = problemData.topics || [];
+      renderTags();
+      updatePathPreview();
+
+      currentRevisions = problemData.revisions || [];
+      populateRevisionSelect();
+    } catch (err) {
+      GGToast.error(err);
+    } finally {
+      GGShell.progress.done();
+    }
+  }
+
+  function populateRevisionSelect() {
+    const sel = document.getElementById('revision-select');
+    let html = '';
+
+    if (currentRevisions.length > 0) {
+      currentRevisions.forEach(r => {
+        const label = r.title ? `Rev ${r.revisionNumber}: ${r.title} (${r.language})` : `Rev ${r.revisionNumber} (${r.language})`;
+        html += `<option value="${r.id}">${label}</option>`;
+      });
+    } else {
+      html += `<option value="LATEST">Revision 1 (Current Solution - ${problemData.language || 'Java'})</option>`;
+    }
+
+    const nextNum = currentRevisions.length > 0
+      ? Math.max(...currentRevisions.map(r => r.revisionNumber)) + 1
+      : 2;
+
+    html += `<option value="NEW">+ Save as New Revision (Revision ${nextNum})</option>`;
+    sel.innerHTML = html;
+
+    // Load first revision by default
+    onRevisionSelectChange();
+  }
+
+  function onRevisionSelectChange() {
+    const selVal = document.getElementById('revision-select').value;
+    const revTitleInput = document.getElementById('revision-title');
+    const langSelect = document.getElementById('language');
+    const notesInput = document.getElementById('notes');
+    const timeComp   = document.getElementById('timeComplexity');
+    const spaceComp  = document.getElementById('spaceComplexity');
+
+    if (selVal === 'NEW') {
+      const nextNum = currentRevisions.length > 0
+        ? Math.max(...currentRevisions.map(r => r.revisionNumber)) + 1
+        : 2;
+      revTitleInput.value = `Revision ${nextNum}`;
+      if (editor) editor.setValue('');
+      notesInput.value = '';
+      timeComp.value = '';
+      spaceComp.value = '';
+    } else {
+      const selectedRev = currentRevisions.find(r => r.id === selVal);
+      if (selectedRev) {
+        revTitleInput.value = selectedRev.title || `Revision ${selectedRev.revisionNumber}`;
+        if (selectedRev.language) {
+          langSelect.value = selectedRev.language;
+          const monacoLang = GG_LANGUAGES.monacoMap[selectedRev.language] || 'plaintext';
+          if (editor) monaco.editor.setModelLanguage(editor.getModel(), monacoLang);
+          updateEditorLangLabel();
+        }
+        if (editor) editor.setValue(selectedRev.code || '');
+        notesInput.value = selectedRev.notes || '';
+        timeComp.value   = selectedRev.timeComplexity || '';
+        spaceComp.value  = selectedRev.spaceComplexity || '';
+      } else {
+        // Fallback to top-level problem fields
+        revTitleInput.value = 'Initial Solution';
+        if (problemData.language) {
+          langSelect.value = problemData.language;
+          const monacoLang = GG_LANGUAGES.monacoMap[problemData.language] || 'plaintext';
+          if (editor) monaco.editor.setModelLanguage(editor.getModel(), monacoLang);
+          updateEditorLangLabel();
+        }
+        if (editor) editor.setValue(problemData.code || '');
+      }
+    }
+  }
+
+  document.getElementById('revision-select')?.addEventListener('change', onRevisionSelectChange);
+
+  // ---- LeetCode auto-fetch -----------------------------------------------
   let fetchTimer;
   document.getElementById('problemUrl').addEventListener('input', (e) => {
     clearTimeout(fetchTimer);
@@ -294,35 +426,76 @@
     if (!code) { GGToast.error({ message: 'Please paste your solution code.' }); return; }
 
     btn.disabled    = true;
-    btn.textContent = 'Saving & pushing to GitHub…';
+    document.getElementById('save-btn-text').textContent = 'Saving & pushing to GitHub…';
     GGShell.progress.show();
 
     try {
-      const payload = {
-        platform:       document.getElementById('platform').value,
-        title:          document.getElementById('title').value.trim(),
-        problemUrl:     document.getElementById('problemUrl').value.trim() || null,
-        difficulty:     document.getElementById('difficulty').value,
-        topics:         tags,
-        language:       document.getElementById('language').value,
-        code,
-        notes:          document.getElementById('notes').value,
-        timeComplexity: document.getElementById('timeComplexity').value,
-        spaceComplexity:document.getElementById('spaceComplexity').value,
-        solvedDate:     document.getElementById('solvedDate').value,
-      };
-      const res = await GGApi.post('/api/problems', payload);
+      if (!isEditMode) {
+        // Create new problem
+        const payload = {
+          platform:       document.getElementById('platform').value,
+          title:          document.getElementById('title').value.trim(),
+          problemUrl:     document.getElementById('problemUrl').value.trim() || null,
+          difficulty:     document.getElementById('difficulty').value,
+          topics:         tags,
+          language:       document.getElementById('language').value,
+          code,
+          notes:          document.getElementById('notes').value,
+          timeComplexity: document.getElementById('timeComplexity').value,
+          spaceComplexity:document.getElementById('spaceComplexity').value,
+          solvedDate:     document.getElementById('solvedDate').value,
+        };
+        const res = await GGApi.post('/api/problems', payload);
 
-      if (res.data.commitStatus === 'COMMITTED') {
-        GGToast.success('Saved and committed to GitHub!');
+        if (res.data.commitStatus === 'COMMITTED') {
+          GGToast.success('Saved and committed to GitHub!');
+        } else {
+          GGToast.show('Saved, but the GitHub push failed — you can retry from Search.', 'error');
+        }
       } else {
-        GGToast.show('Saved, but the GitHub push failed — you can retry from Search.', 'error');
+        // Edit existing problem metadata
+        const metaPayload = {
+          platform:       document.getElementById('platform').value,
+          title:          document.getElementById('title').value.trim(),
+          problemUrl:     document.getElementById('problemUrl').value.trim() || null,
+          difficulty:     document.getElementById('difficulty').value,
+          topics:         tags,
+          language:       document.getElementById('language').value,
+          code,
+          notes:          document.getElementById('notes').value,
+          timeComplexity: document.getElementById('timeComplexity').value,
+          spaceComplexity:document.getElementById('spaceComplexity').value,
+          solvedDate:     document.getElementById('solvedDate').value,
+        };
+
+        await GGApi.put(`/api/problems/${problemId}`, metaPayload);
+
+        // Handle revision save/update
+        const selVal = document.getElementById('revision-select').value;
+        const revPayload = {
+          title:           document.getElementById('revision-title').value.trim() || null,
+          language:        document.getElementById('language').value,
+          code,
+          notes:           document.getElementById('notes').value,
+          timeComplexity:  document.getElementById('timeComplexity').value,
+          spaceComplexity: document.getElementById('spaceComplexity').value,
+        };
+
+        if (selVal === 'NEW') {
+          await GGApi.post(`/api/problems/${problemId}/revisions`, revPayload);
+          GGToast.success('New revision created & metadata updated!');
+        } else if (selVal !== 'LATEST' && selVal) {
+          await GGApi.put(`/api/problems/${problemId}/revisions/${selVal}`, revPayload);
+          GGToast.success('Revision & problem metadata updated!');
+        } else {
+          GGToast.success('Problem & revision updated!');
+        }
       }
-      window.location.href = 'dashboard.html';
+      window.location.href = 'search.html';
     } catch (err) {
       GGToast.error(err);
       btn.disabled    = false;
-      btn.innerHTML   = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg> Save &amp; Commit to GitHub`;
+      document.getElementById('save-btn-text').textContent = isEditMode ? 'Save Changes & Commit' : 'Save & Commit to GitHub';
       GGShell.progress.done();
     }
   });

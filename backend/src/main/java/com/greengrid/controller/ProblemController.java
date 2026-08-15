@@ -49,11 +49,28 @@ public class ProblemController {
     }
 
     @PatchMapping("/{id}/revision")
-    public ApiResponse<ProblemResponse> updateRevision(@AuthenticationPrincipal UserPrincipal principal,
+    public ApiResponse<ProblemResponse> updateRevisionStatus(@AuthenticationPrincipal UserPrincipal principal,
                                                         @PathVariable UUID id,
                                                         @RequestBody RevisionUpdateRequest request) {
         return ApiResponse.ok(problemService.updateRevisionStatus(principal.getId(), id, request));
     }
+
+    @PostMapping("/{id}/revisions")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<ProblemResponse> createRevision(@AuthenticationPrincipal UserPrincipal principal,
+                                                        @PathVariable UUID id,
+                                                        @Valid @RequestBody CreateRevisionRequest request) {
+        return ApiResponse.ok("Revision added", problemService.createRevision(principal.getId(), id, request));
+    }
+
+    @PutMapping("/{id}/revisions/{revisionId}")
+    public ApiResponse<ProblemResponse> updateRevisionContent(@AuthenticationPrincipal UserPrincipal principal,
+                                                               @PathVariable UUID id,
+                                                               @PathVariable UUID revisionId,
+                                                               @Valid @RequestBody CreateRevisionRequest request) {
+        return ApiResponse.ok("Revision updated", problemService.updateRevision(principal.getId(), id, revisionId, request));
+    }
+
 
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@AuthenticationPrincipal UserPrincipal principal, @PathVariable UUID id) {

@@ -107,4 +107,9 @@ public class Problem extends BaseEntity {
             uniqueConstraints = @jakarta.persistence.UniqueConstraint(columnNames = {"problem_id", "tag_id"})
     )
     private Set<Tag> tags = new HashSet<>();
+
+    @jakarta.persistence.OneToMany(mappedBy = "problem", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @jakarta.persistence.OrderBy("revisionNumber ASC")
+    private java.util.List<ProblemRevision> revisions = new java.util.ArrayList<>();
 }
+
