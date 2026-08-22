@@ -400,8 +400,8 @@
     }
   }
 
-  document.getElementById('user-search-btn').addEventListener('click', performSearch);
-  document.getElementById('user-search-input').addEventListener('keypress', e => {
+  document.getElementById('user-search-btn')?.addEventListener('click', performSearch);
+  document.getElementById('user-search-input')?.addEventListener('keypress', e => {
     if (e.key === 'Enter') performSearch();
   });
 
@@ -519,8 +519,8 @@
     document.getElementById('progress-modal-backdrop').classList.remove('show');
   }
 
-  document.getElementById('modal-close-btn').addEventListener('click', closeModal);
-  document.getElementById('progress-modal-backdrop').addEventListener('click', e => {
+  document.getElementById('modal-close-btn')?.addEventListener('click', closeModal);
+  document.getElementById('progress-modal-backdrop')?.addEventListener('click', e => {
     if (e.target === document.getElementById('progress-modal-backdrop')) closeModal();
   });
 

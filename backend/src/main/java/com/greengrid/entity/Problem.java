@@ -109,6 +109,7 @@ public class Problem extends BaseEntity {
     private Set<Tag> tags = new HashSet<>();
 
     @jakarta.persistence.OneToMany(mappedBy = "problem", cascade = CascadeType.ALL, orphanRemoval = true)
+    @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
     @jakarta.persistence.OrderBy("revisionNumber ASC")
     private java.util.List<ProblemRevision> revisions = new java.util.ArrayList<>();
 }
