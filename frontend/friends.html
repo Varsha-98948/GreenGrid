@@ -466,8 +466,12 @@
     }
   }
 
+  function viewProgress(userId) {
+    window.location.href = `friend-progress.html?userId=${encodeURIComponent(userId)}`;
+  }
+
   // View Aggregate Progress Modal
-  async function viewProgress(userId) {
+  async function loadProgressModal(userId) {
     GGShell.progress.show();
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';

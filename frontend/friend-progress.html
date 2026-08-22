@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="View a friend's learning progress.">
+<title>Friend Progress - GreenGrid</title>
+<link href="css/styles.css" rel="stylesheet">
+</head>
+<body>
+
+<div id="gg-page">
+  <div class="gg-page-header">
+    <div>
+      <h1 class="gg-page-title" id="friend-name">Friend Progress</h1>
+      <p class="gg-page-subtitle" id="friend-handle"></p>
+    </div>
+    <a class="btn-gg-outline" href="friends.html">Back to Friends</a>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3"><div class="gg-stat-card"><div class="gg-stat-value" id="total-problems">0</div><div class="gg-stat-label">Total Solved</div></div></div>
+    <div class="col-6 col-lg-3"><div class="gg-stat-card"><div class="gg-stat-value" id="mastery-percentage">0%</div><div class="gg-stat-label">Mastery Rate</div></div></div>
+    <div class="col-6 col-lg-3"><div class="gg-stat-card"><div class="gg-stat-value" id="current-streak">0</div><div class="gg-stat-label">Current Streak</div></div></div>
+    <div class="col-6 col-lg-3"><div class="gg-stat-card"><div class="gg-stat-value" id="starred-count">0</div><div class="gg-stat-label">Starred</div></div></div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-6"><div class="gg-card"><div class="gg-section-title">Mastery Breakdown</div><div id="mastery-breakdown"></div></div></div>
+    <div class="col-lg-6"><div class="gg-card"><div class="gg-section-title">Difficulty Breakdown</div><div class="d-flex flex-wrap gap-2" id="difficulty-breakdown"></div></div></div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/toast.js"></script>
+<script src="js/shell.js"></script>
+<script>
+  GGAuth.requireAuth();
+  GGShell.render('friends');
+
+  const setText = (id, value) => {
+    const element = document.getElementById(id);
+    if (element) element.textContent = value ?? '';
+  };
+
+  async function loadFriendProgress() {
+    const userId = new URLSearchParams(window.location.search).get('userId');
+    if (!userId) {
+      window.location.href = 'friends.html';
+      return;
+    }
+
+    GGShell.progress.show();
+    try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+      const response = await GGApi.get(`/api/friends/${encodeURIComponent(userId)}/progress?timezone=${encodeURIComponent(timezone)}`);
+      const progress = response.data;
+      const difficulties = progress.difficultyBreakdown || {};
+
+      setText('friend-name', progress.displayName || 'Friend Progress');
+      setText('friend-handle', progress.githubUsername ? `@${progress.githubUsername}` : '');
+      setText('total-problems', progress.totalProblems ?? 0);
+      setText('mastery-percentage', `${progress.masteryPercentage ?? 0}%`);
+      setText('current-streak', progress.currentStreak ?? 0);
+      setText('starred-count', progress.starredCount ?? 0);
+      document.getElementById('mastery-breakdown').innerHTML = `
+        <div class="d-flex justify-content-between mb-2"><span>Mastered</span><strong>${progress.masteredCount ?? 0}</strong></div>
+        <div class="d-flex justify-content-between mb-2"><span>Needs revision</span><strong>${progress.needsRevisionCount ?? 0}</strong></div>
+        <div class="d-flex justify-content-between"><span>Not set</span><strong>${progress.notSetCount ?? 0}</strong></div>`;
+      document.getElementById('difficulty-breakdown').innerHTML = `
+        <span class="badge-gg badge-diff-easy">Easy: ${difficulties.EASY || 0}</span>
+        <span class="badge-gg badge-diff-medium">Medium: ${difficulties.MEDIUM || 0}</span>
+        <span class="badge-gg badge-diff-hard">Hard: ${difficulties.HARD || 0}</span>`;
+    } catch (error) {
+      GGToast.error(error);
+    } finally {
+      GGShell.progress.done();
+    }
+  }
+
+  loadFriendProgress();
+</script>
+</body>
+</html>
