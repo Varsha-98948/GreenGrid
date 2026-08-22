@@ -248,7 +248,11 @@
   // Load pending incoming/outgoing requests
   async function loadPendingRequests() {
     const res = await GGApi.get('/api/friends/requests');
-    const { incoming, outgoing } = res.data;
+    // The friend API wraps the lists in ApiResponse.data. Keep these as
+    // arrays even if a future empty response omits either property, so one
+    // empty list cannot prevent the other list from rendering.
+    const incoming = Array.isArray(res.data?.incoming) ? res.data.incoming : [];
+    const outgoing = Array.isArray(res.data?.outgoing) ? res.data.outgoing : [];
 
     const badge = document.getElementById('pending-badge-count');
     badge.textContent = incoming.length + outgoing.length;
@@ -263,12 +267,11 @@
 
     incoming.forEach(req => {
       const u = req.requester;
-      const initial = (u.displayName || '?').charAt(0).toUpperCase();
       const ghTag = u.githubUsername ? `@${u.githubUsername}` : '';
       html += `
         <div class="user-card">
           <div class="user-info">
-            <div class="user-avatar">${initial}</div>
+            ${renderUserAvatar(u)}
             <div>
               <div class="user-name">${escapeHtml(u.displayName)}</div>
               <div class="user-handle">${escapeHtml(ghTag)} <span class="badge-gg badge-neutral ms-1">Incoming</span></div>
@@ -284,18 +287,20 @@
 
     outgoing.forEach(req => {
       const u = req.addressee;
-      const initial = (u.displayName || '?').charAt(0).toUpperCase();
       const ghTag = u.githubUsername ? `@${u.githubUsername}` : '';
       html += `
         <div class="user-card">
           <div class="user-info">
-            <div class="user-avatar">${initial}</div>
+            ${renderUserAvatar(u)}
             <div>
               <div class="user-name">${escapeHtml(u.displayName)}</div>
               <div class="user-handle">${escapeHtml(ghTag)} <span class="badge-gg badge-neutral ms-1">Pending Sent</span></div>
             </div>
           </div>
-          <span class="text-tertiary-gg" style="font-size:.8rem;">Awaiting response</span>
+          <div class="d-flex align-items-center gap-2">
+            <span class="text-tertiary-gg" style="font-size:.8rem;">Pending</span>
+            <button class="btn-gg-outline btn-sm" onclick="cancelRequest('${req.id}')">Cancel Request</button>
+          </div>
         </div>
       `;
     });
@@ -416,7 +421,7 @@
     try {
       await GGApi.post(`/api/friends/requests/${requestId}/accept`);
       GGToast.success('Friend request accepted!');
-      loadData();
+      await loadData();
     } catch (err) {
       GGToast.error(err);
     }
@@ -426,7 +431,20 @@
     try {
       await GGApi.post(`/api/friends/requests/${requestId}/reject`);
       GGToast.info('Friend request rejected');
-      loadPendingRequests();
+      await loadData();
+    } catch (err) {
+      GGToast.error(err);
+    }
+  }
+
+  async function cancelRequest(requestId) {
+    try {
+      await GGApi.delete(`/api/friends/requests/${requestId}`);
+      GGToast.success('Friend request cancelled');
+      await loadData();
+      if (document.getElementById('user-search-input').value.trim()) {
+        await performSearch();
+      }
     } catch (err) {
       GGToast.error(err);
     }
@@ -509,6 +527,24 @@
   function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function renderUserAvatar(user) {
+    const initial = (user?.displayName || '?').charAt(0).toUpperCase();
+    const avatarUrl = safeAvatarUrl(user?.avatarUrl);
+    if (!avatarUrl) return `<div class="user-avatar">${escapeHtml(initial)}</div>`;
+
+    return `<img class="user-avatar" src="${escapeHtml(avatarUrl)}" alt="" referrerpolicy="no-referrer">`;
+  }
+
+  function safeAvatarUrl(value) {
+    if (!value) return null;
+    try {
+      const url = new URL(value, window.location.origin);
+      return ['http:', 'https:'].includes(url.protocol) ? url.href : null;
+    } catch {
+      return null;
+    }
   }
 
   loadData();

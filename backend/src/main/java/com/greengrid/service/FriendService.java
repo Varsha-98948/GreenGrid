@@ -178,6 +178,22 @@ public class FriendService {
         friendRequestRepository.save(request);
     }
 
+    @Transactional
+    public void cancelFriendRequest(UUID currentUserId, UUID requestId) {
+        FriendRequest request = friendRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Friend request not found"));
+
+        if (!request.getRequester().getId().equals(currentUserId)) {
+            throw new BadRequestException("You are not authorized to cancel this friend request");
+        }
+
+        if (request.getStatus() != FriendRequestStatus.PENDING) {
+            throw new BadRequestException("Friend request is not pending");
+        }
+
+        friendRequestRepository.delete(request);
+    }
+
     @Transactional(readOnly = true)
     public List<FriendSummaryDto> getFriends(UUID currentUserId) {
         List<Friendship> friendships = friendshipRepository.findAllByUserId(currentUserId);

@@ -56,6 +56,13 @@ public class FriendController {
         return ApiResponse.message("Friend request rejected");
     }
 
+    @DeleteMapping("/requests/{id}")
+    public ApiResponse<Void> cancelFriendRequest(@AuthenticationPrincipal UserPrincipal principal,
+                                                 @PathVariable UUID id) {
+        friendService.cancelFriendRequest(principal.getId(), id);
+        return ApiResponse.message("Friend request cancelled");
+    }
+
     @GetMapping
     public ApiResponse<List<FriendSummaryDto>> getFriends(@AuthenticationPrincipal UserPrincipal principal) {
         return ApiResponse.ok(friendService.getFriends(principal.getId()));

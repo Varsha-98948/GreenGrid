@@ -289,4 +289,58 @@ public class FriendServiceTest {
                 () -> friendService.rejectFriendRequest(userCharlie.getId(), requestDto.id())
         );
     }
+
+    @Test
+    void testRequesterCanCancelPendingRequest() {
+        FriendRequestDto requestDto = friendService.sendFriendRequest(userAlice.getId(), userBob.getId());
+
+        friendService.cancelFriendRequest(userAlice.getId(), requestDto.id());
+
+        assertTrue(friendService.getPendingRequests(userAlice.getId()).outgoing().isEmpty());
+        assertTrue(friendService.getPendingRequests(userBob.getId()).incoming().isEmpty());
+    }
+
+    @Test
+    void testRecipientCannotCancelRequest() {
+        FriendRequestDto requestDto = friendService.sendFriendRequest(userAlice.getId(), userBob.getId());
+
+        assertThrows(BadRequestException.class,
+                () -> friendService.cancelFriendRequest(userBob.getId(), requestDto.id()));
+    }
+
+    @Test
+    void testThirdUserCannotCancelRequest() {
+        FriendRequestDto requestDto = friendService.sendFriendRequest(userAlice.getId(), userBob.getId());
+
+        assertThrows(BadRequestException.class,
+                () -> friendService.cancelFriendRequest(userCharlie.getId(), requestDto.id()));
+    }
+
+    @Test
+    void testAcceptedRequestCannotBeCancelled() {
+        FriendRequestDto requestDto = friendService.sendFriendRequest(userAlice.getId(), userBob.getId());
+        friendService.acceptFriendRequest(userBob.getId(), requestDto.id());
+
+        assertThrows(BadRequestException.class,
+                () -> friendService.cancelFriendRequest(userAlice.getId(), requestDto.id()));
+    }
+
+    @Test
+    void testRejectedRequestCannotBeCancelled() {
+        FriendRequestDto requestDto = friendService.sendFriendRequest(userAlice.getId(), userBob.getId());
+        friendService.rejectFriendRequest(userBob.getId(), requestDto.id());
+
+        assertThrows(BadRequestException.class,
+                () -> friendService.cancelFriendRequest(userAlice.getId(), requestDto.id()));
+    }
+
+    @Test
+    void testNewRequestCanBeSentAfterCancellation() {
+        FriendRequestDto requestDto = friendService.sendFriendRequest(userAlice.getId(), userBob.getId());
+        friendService.cancelFriendRequest(userAlice.getId(), requestDto.id());
+
+        FriendRequestDto replacement = friendService.sendFriendRequest(userAlice.getId(), userBob.getId());
+        assertNotNull(replacement.id());
+        assertEquals(1, friendService.getPendingRequests(userBob.getId()).incoming().size());
+    }
 }
