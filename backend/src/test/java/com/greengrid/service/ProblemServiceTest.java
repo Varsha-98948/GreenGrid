@@ -278,19 +278,20 @@ public class ProblemServiceTest {
         ProblemResponse resp1 = problemService.createProblem(testUser.getId(), req1);
         assertNotNull(resp1.id());
 
-        // 2. Exact duplicate title for same user throws DuplicateProblemException
-        CreateProblemRequest reqDuplicate = new CreateProblemRequest(
-                "LeetCode", "Two Sum", "https://leetcode.com/problems/two-sum/",
+        // 2. Exact reproduction case:
+        // Try creating another problem titled: "two sum" -> rejected as duplicate
+        CreateProblemRequest reqLowerCase = new CreateProblemRequest(
+                "LeetCode", "two sum", "https://leetcode.com/problems/two-sum/",
                 Difficulty.EASY, List.of("Array"), "Java",
-                "class Solution {}", "Notes dup", "O(n)", "O(n)", LocalDate.now()
+                "class Solution {}", "Notes lower", "O(n)", "O(n)", LocalDate.now()
         );
         com.greengrid.exception.DuplicateProblemException ex1 = assertThrows(
                 com.greengrid.exception.DuplicateProblemException.class,
-                () -> problemService.createProblem(testUser.getId(), reqDuplicate)
+                () -> problemService.createProblem(testUser.getId(), reqLowerCase)
         );
         assertEquals(resp1.id(), ex1.getExistingProblemId());
 
-        // 3. Case difference and extra spaces ("  TWO   SUM  ") throws DuplicateProblemException
+        // Try another: "  TWO   SUM  " -> rejected as duplicate
         CreateProblemRequest reqNormalized = new CreateProblemRequest(
                 "LeetCode", "  TWO   SUM  ", "https://leetcode.com/problems/two-sum/",
                 Difficulty.EASY, List.of("Array"), "Java",
@@ -302,23 +303,48 @@ public class ProblemServiceTest {
         );
         assertEquals(resp1.id(), ex2.getExistingProblemId());
 
-        // 4. Similar but non-identical titles ("Binary Tree" vs "Binary Tree Traversal") allowed
-        CreateProblemRequest reqSimilar1 = new CreateProblemRequest(
-                "LeetCode", "Binary Tree", "https://leetcode.com/problems/bt/",
+        // 3. Similar titles remain distinct.
+        CreateProblemRequest reqBinaryTree = new CreateProblemRequest(
+                "LeetCode", "Binary Tree", "https://leetcode.com/problems/binary-tree/",
                 Difficulty.EASY, List.of("Tree"), "Java",
-                "class Solution {}", "Notes BT", "O(n)", "O(n)", LocalDate.now()
+                "class Solution {}", "Notes B", "O(n)", "O(1)", LocalDate.now()
         );
-        ProblemResponse btResp1 = problemService.createProblem(testUser.getId(), reqSimilar1);
-
-        CreateProblemRequest reqSimilar2 = new CreateProblemRequest(
-                "LeetCode", "Binary Tree Traversal", "https://leetcode.com/problems/btt/",
+        ProblemResponse binaryTree = problemService.createProblem(testUser.getId(), reqBinaryTree);
+        ProblemResponse binaryTreeTraversal = problemService.createProblem(testUser.getId(), new CreateProblemRequest(
+                "LeetCode", "Binary Tree Traversal", "https://leetcode.com/problems/binary-tree-traversal/",
                 Difficulty.EASY, List.of("Tree"), "Java",
-                "class Solution {}", "Notes BTT", "O(n)", "O(n)", LocalDate.now()
-        );
-        ProblemResponse btResp2 = problemService.createProblem(testUser.getId(), reqSimilar2);
-        assertNotEquals(btResp1.id(), btResp2.id());
+                "class Solution {}", "Notes traversal", "O(n)", "O(1)", LocalDate.now()
+        ));
+        assertNotEquals(binaryTree.id(), binaryTreeTraversal.id());
 
-        // 5. Different users can have the same title
+        // 4. Update title collision test:
+        // Renaming B to "Two Sum" must point to problem A.
+        UpdateProblemRequest updateToDuplicateReq = new UpdateProblemRequest(
+                "LeetCode", "Two Sum", "https://leetcode.com/problems/binary-tree/",
+                Difficulty.EASY, List.of("Tree"), "Java",
+                "class Solution {}", "Notes B", "O(n)", "O(1)"
+        );
+        com.greengrid.exception.DuplicateProblemException updateEx = assertThrows(
+                com.greengrid.exception.DuplicateProblemException.class,
+                () -> problemService.updateProblem(testUser.getId(), binaryTree.id(), updateToDuplicateReq)
+        );
+        assertEquals(resp1.id(), updateEx.getExistingProblemId());
+
+        // 5. Renaming B to its original title must succeed.
+        ProblemResponse binaryTreeUpdated = problemService.updateProblem(testUser.getId(), binaryTree.id(), reqBinaryTreeToUpdateRequest());
+        assertEquals("Binary Tree", binaryTreeUpdated.title());
+
+        // 6. Updating problem retaining its own title must succeed cleanly
+        UpdateProblemRequest updateOwnReq = new UpdateProblemRequest(
+                "LeetCode", "Two Sum", "https://leetcode.com/problems/two-sum/",
+                Difficulty.MEDIUM, List.of("Array", "Hash Table"), "Java",
+                "class Solution { /* updated */ }", "Updated notes", "O(n)", "O(n)"
+        );
+        ProblemResponse ownUpdatedResp = problemService.updateProblem(testUser.getId(), resp1.id(), updateOwnReq);
+        assertEquals(resp1.id(), ownUpdatedResp.id());
+        assertEquals(Difficulty.MEDIUM, ownUpdatedResp.difficulty());
+
+        // 7. Different users can have the same title
         User secondUser = new User();
         secondUser.setEmail("seconduser_" + UUID.randomUUID() + "@greengrid.dev");
         secondUser.setDisplayName("Second User");
@@ -327,11 +353,24 @@ public class ProblemServiceTest {
         ProblemResponse respUser2 = problemService.createProblem(secondUser.getId(), req1);
         assertNotNull(respUser2.id());
 
-        // 6. Adding a revision to existing problem works cleanly without duplicate exception
+        // 8. Adding and then editing a revision works without duplicate-title validation.
         CreateRevisionRequest revReq = new CreateRevisionRequest(
                 "Revision 2", "Python", "def twoSum(): pass", "Rev notes", "O(n)", "O(n)"
         );
         ProblemResponse revResp = problemService.createRevision(testUser.getId(), resp1.id(), revReq);
         assertEquals(2, revResp.revisionCount());
+
+        ProblemResponse editedRevResp = problemService.updateRevision(testUser.getId(), resp1.id(),
+                revResp.revisions().get(1).id(), new CreateRevisionRequest(
+                        "Revision 2 edited", "Python", "def twoSum(): return []", "Edited rev notes", "O(n)", "O(n)"));
+        assertEquals("Revision 2 edited", editedRevResp.revisions().get(1).title());
+    }
+
+    private UpdateProblemRequest reqBinaryTreeToUpdateRequest() {
+        return new UpdateProblemRequest(
+                "LeetCode", "Binary Tree", "https://leetcode.com/problems/binary-tree/",
+                Difficulty.EASY, List.of("Tree"), "Java",
+                "class Solution {}", "Notes B", "O(n)", "O(1)"
+        );
     }
 }

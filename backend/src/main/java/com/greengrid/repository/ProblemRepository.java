@@ -28,6 +28,12 @@ public interface ProblemRepository extends JpaRepository<Problem, UUID>, JpaSpec
             "AND LOWER(REGEXP_REPLACE(TRIM(p.title), '\\s+', ' ', 'g')) = :normalizedTitle LIMIT 1", nativeQuery = true)
     Optional<Problem> findDuplicateForUser(@Param("userId") UUID userId, @Param("normalizedTitle") String normalizedTitle);
 
+    @Query(value = "SELECT * FROM problems p WHERE p.user_id = :userId AND p.id != :excludeId " +
+            "AND LOWER(REGEXP_REPLACE(TRIM(p.title), '\\s+', ' ', 'g')) = :normalizedTitle LIMIT 1", nativeQuery = true)
+    Optional<Problem> findDuplicateForUserExcludingId(@Param("userId") UUID userId,
+                                                      @Param("normalizedTitle") String normalizedTitle,
+                                                      @Param("excludeId") UUID excludeId);
+
     Page<Problem> findAllByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);
 
     List<Problem> findTop10ByUserIdOrderByCreatedAtDesc(UUID userId);

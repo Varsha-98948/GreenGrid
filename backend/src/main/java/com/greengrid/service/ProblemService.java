@@ -88,6 +88,9 @@ public class ProblemService {
         try {
             problem = problemRepository.save(problem);
         } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+            if (!isNormalizedTitleConstraintViolation(ex)) {
+                throw ex;
+            }
             var existing = problemRepository.findDuplicateForUser(userId, normalizedTitle);
             if (existing.isPresent()) {
                 throw new com.greengrid.exception.DuplicateProblemException(
@@ -121,8 +124,18 @@ public class ProblemService {
         Problem problem = getOwned(userId, problemId);
         User user = problem.getUser();
 
+        if (request.title() != null && !request.title().isBlank()) {
+            String normalizedTitle = normalizeTitle(request.title());
+            var duplicateOpt = problemRepository.findDuplicateForUserExcludingId(userId, normalizedTitle, problemId);
+            if (duplicateOpt.isPresent()) {
+                throw new com.greengrid.exception.DuplicateProblemException(
+                        "A problem with title '" + request.title().trim() + "' already exists.",
+                        duplicateOpt.get().getId());
+            }
+            problem.setTitle(request.title().trim());
+        }
+
         problem.setPlatform(request.platform());
-        problem.setTitle(request.title());
         problem.setProblemUrl(request.problemUrl());
         problem.setDifficulty(request.difficulty());
         if (request.language() != null && !request.language().isBlank()) {
@@ -149,7 +162,23 @@ public class ProblemService {
 
         pushToGitHub(userId, problem, latestRev);
 
-        return toResponse(problemRepository.save(problem));
+        try {
+            return toResponse(problemRepository.save(problem));
+        } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+            if (!isNormalizedTitleConstraintViolation(ex)) {
+                throw ex;
+            }
+            if (request.title() != null && !request.title().isBlank()) {
+                String normalizedTitle = normalizeTitle(request.title());
+                var existing = problemRepository.findDuplicateForUserExcludingId(userId, normalizedTitle, problemId);
+                if (existing.isPresent()) {
+                    throw new com.greengrid.exception.DuplicateProblemException(
+                            "A problem with title '" + request.title().trim() + "' already exists.",
+                            existing.get().getId());
+                }
+            }
+            throw ex;
+        }
     }
 
     @Transactional
@@ -177,8 +206,8 @@ public class ProblemService {
             problem.setSolvedDate(request.solvedDate());
         }
 
-        List<ProblemRevision> existing = problemRevisionRepository.findByProblemIdOrderByRevisionNumberAsc(problemId);
-        int nextRevNum = existing.stream().mapToInt(ProblemRevision::getRevisionNumber).max().orElse(0) + 1;
+        List<ProblemRevision> existingRevs = problemRevisionRepository.findByProblemIdOrderByRevisionNumberAsc(problemId);
+        int nextRevNum = existingRevs.stream().mapToInt(ProblemRevision::getRevisionNumber).max().orElse(0) + 1;
 
         ProblemRevision revision = new ProblemRevision();
         revision.setProblem(problem);
@@ -423,5 +452,15 @@ public class ProblemService {
     private String normalizeTitle(String title) {
         if (title == null) return "";
         return title.trim().replaceAll("\\s+", " ").toLowerCase();
+    }
+
+    private boolean isNormalizedTitleConstraintViolation(Throwable error) {
+        for (Throwable cause = error; cause != null; cause = cause.getCause()) {
+            if (cause instanceof org.hibernate.exception.ConstraintViolationException violation
+                    && "uk_problems_user_normalized_title".equals(violation.getConstraintName())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

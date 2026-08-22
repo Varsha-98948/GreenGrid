@@ -499,9 +499,10 @@
 
       window.location.href = 'dashboard.html';
     } catch (err) {
-      if (err && (err.status === 409 || err.existingProblemId)) {
-        const existingId = err.existingProblemId;
-        const msg = err.message || 'A problem with this title already exists.';
+      const existingId = err.existingProblemId || err.body?.existingProblemId;
+      const isDuplicate = Boolean(err) && (err.status === 409 || Boolean(existingId));
+      if (isDuplicate) {
+        const msg = err.body?.message || err.message || 'A problem with this title already exists.';
         let dupAlert = document.getElementById('duplicate-alert');
         if (!dupAlert) {
           dupAlert = document.createElement('div');
