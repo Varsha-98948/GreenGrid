@@ -11,42 +11,95 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.9rem 1.1rem;
-    border-radius: 10px;
-    background: var(--surface-card);
-    border: 1px solid var(--border-subtle);
-    margin-bottom: 0.75rem;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    margin-bottom: 0.7rem;
     transition: transform .15s ease, border-color .15s ease;
   }
   .user-card:hover {
-    border-color: var(--border-focus);
+    border-color: var(--accent-border);
   }
   .user-info {
     display: flex;
     align-items: center;
     gap: 0.85rem;
+    min-width: 0;
   }
   .user-avatar {
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
-    background: var(--surface-elevated);
+    width: 46px;
+    height: 46px;
+    border-radius: var(--radius-md);
+    background: var(--accent-soft-mid);
     color: var(--accent);
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
     font-size: 1.1rem;
-    border: 1px solid var(--border-subtle);
+    border: 1px solid var(--accent-border);
+    flex-shrink: 0;
   }
+  img.user-avatar { object-fit: cover; }
   .user-name {
-    font-weight: 600;
-    font-size: 0.95rem;
+    font-weight: 700;
+    font-size: .95rem;
     color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .user-handle {
     font-size: 0.8rem;
     color: var(--text-tertiary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .friend-card {
+    padding: 1.1rem;
+    background: var(--surface);
+    box-shadow: var(--shadow-card);
+  }
+  .friend-card-main { min-width: 0; }
+  .friend-status { margin-top: .35rem; }
+  .friend-actions, .request-actions {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-shrink: 0;
+  }
+  .request-group + .request-group {
+    border-top: 1px solid var(--border);
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+  }
+  .request-group-title {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin: 0 0 .75rem;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .empty-section {
+    padding: 1.5rem 0 .4rem;
+    text-align: center;
+  }
+  .empty-section p { margin: 0; }
+  .friends-search-row { align-items: stretch; }
+  @media (max-width: 575.98px) {
+    .user-card { align-items: flex-start; flex-direction: column; }
+    .friend-actions, .request-actions { width: 100%; }
+    .friend-actions .btn-gg-primary { flex: 1; justify-content: center; }
+    .request-actions .btn-gg-primary, .request-actions .btn-gg-outline { flex: 1; justify-content: center; }
+    .friends-search-row { flex-direction: column; }
+    .friends-search-row .btn-gg-primary { justify-content: center; }
   }
   .progress-stat-card {
     background: var(--surface-card);
@@ -104,20 +157,20 @@
   <div class="gg-page-header">
     <div>
       <h1 class="gg-page-title">Friends</h1>
-      <p class="gg-page-subtitle">Connect with developer peers and view aggregate learning progress.</p>
+      <p class="gg-page-subtitle">Build your learning circle and follow each friend's progress.</p>
     </div>
   </div>
 
-  <div class="row g-4">
-    <!-- Left Column: Search & Pending Requests -->
-    <div class="col-lg-6">
+  <div class="row g-3">
+    <!-- Discovery and requests -->
+    <div class="col-lg-5">
       
       <!-- Search Users Card -->
       <div class="gg-card mb-4">
         <div class="gg-section-title">Find Developer Peers</div>
         <p class="text-secondary-gg mb-3" style="font-size:.85rem;">Search users by display name to connect.</p>
-        <div class="d-flex gap-2 mb-3">
-          <input type="text" class="form-control-gg" id="user-search-input" placeholder="Search display name...">
+        <div class="d-flex gap-2 mb-3 friends-search-row">
+          <input type="text" class="form-control-gg" id="user-search-input" placeholder="Search by display name">
           <button class="btn-gg-primary" id="user-search-btn">Search</button>
         </div>
         <div id="search-results-list"></div>
@@ -126,7 +179,10 @@
       <!-- Pending Requests Card -->
       <div class="gg-card">
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <div class="gg-section-title mb-0">Pending Requests</div>
+          <div>
+            <div class="gg-section-title mb-1">Friend Requests</div>
+            <div class="text-muted-gg" style="font-size:.78rem;">Manage incoming and sent invitations</div>
+          </div>
           <span class="badge-gg badge-neutral" id="pending-badge-count">0</span>
         </div>
         
@@ -137,11 +193,14 @@
 
     </div>
 
-    <!-- Right Column: Friends List -->
-    <div class="col-lg-6">
+    <!-- Confirmed friends -->
+    <div class="col-lg-7">
       <div class="gg-card">
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <div class="gg-section-title mb-0">Your Friends</div>
+          <div>
+            <div class="gg-section-title mb-1">Your Friends</div>
+            <div class="text-muted-gg" style="font-size:.78rem;">Open a profile for detailed progress</div>
+          </div>
           <span class="badge-gg badge-neutral" id="friends-badge-count">0</span>
         </div>
 
@@ -260,51 +319,58 @@
     const listEl = document.getElementById('pending-requests-list');
     if (!listEl) return;
     if (incoming.length === 0 && outgoing.length === 0) {
-      listEl.innerHTML = '<p class="text-muted-gg" style="font-size:.85rem;">No pending friend requests.</p>';
+      listEl.innerHTML = '<div class="empty-section"><p class="text-muted-gg" style="font-size:.85rem;">No pending requests. Search for a developer to grow your circle.</p></div>';
       return;
     }
 
     let html = '';
 
-    incoming.forEach(req => {
-      const u = req.requester;
-      const ghTag = u.githubUsername ? `@${u.githubUsername}` : '';
-      html += `
-        <div class="user-card">
-          <div class="user-info">
-            ${renderUserAvatar(u)}
-            <div>
-              <div class="user-name">${escapeHtml(u.displayName)}</div>
-              <div class="user-handle">${escapeHtml(ghTag)} <span class="badge-gg badge-neutral ms-1">Incoming</span></div>
+    if (incoming.length) {
+      html += '<div class="request-group"><div class="request-group-title"><span class="badge-gg badge-status-committed">Incoming</span> Requests to review</div>';
+      incoming.forEach(req => {
+        const u = req.requester;
+        const ghTag = u.githubUsername ? `@${u.githubUsername}` : 'GitHub not connected';
+        html += `
+          <div class="user-card">
+            <div class="user-info">
+              ${renderUserAvatar(u)}
+              <div class="friend-card-main">
+                <div class="user-name">${escapeHtml(u.displayName)}</div>
+                <div class="user-handle">${escapeHtml(ghTag)}</div>
+              </div>
+            </div>
+            <div class="request-actions">
+              <button class="btn-gg-primary btn-sm" onclick="acceptRequest('${req.id}')">Accept</button>
+              <button class="btn-gg-outline btn-sm" onclick="rejectRequest('${req.id}')">Reject</button>
             </div>
           </div>
-          <div class="d-flex gap-2">
-            <button class="btn-gg-primary btn-sm" onclick="acceptRequest('${req.id}')">Accept</button>
-            <button class="btn-gg-outline btn-sm" onclick="rejectRequest('${req.id}')">Reject</button>
-          </div>
-        </div>
-      `;
-    });
+        `;
+      });
+      html += '</div>';
+    }
 
-    outgoing.forEach(req => {
-      const u = req.addressee;
-      const ghTag = u.githubUsername ? `@${u.githubUsername}` : '';
-      html += `
-        <div class="user-card">
-          <div class="user-info">
-            ${renderUserAvatar(u)}
-            <div>
-              <div class="user-name">${escapeHtml(u.displayName)}</div>
-              <div class="user-handle">${escapeHtml(ghTag)} <span class="badge-gg badge-neutral ms-1">Pending Sent</span></div>
+    if (outgoing.length) {
+      html += '<div class="request-group"><div class="request-group-title"><span class="badge-gg badge-neutral">Sent</span> Awaiting response</div>';
+      outgoing.forEach(req => {
+        const u = req.addressee;
+        const ghTag = u.githubUsername ? `@${u.githubUsername}` : 'GitHub not connected';
+        html += `
+          <div class="user-card">
+            <div class="user-info">
+              ${renderUserAvatar(u)}
+              <div class="friend-card-main">
+                <div class="user-name">${escapeHtml(u.displayName)}</div>
+                <div class="user-handle">${escapeHtml(ghTag)}</div>
+              </div>
+            </div>
+            <div class="request-actions">
+              <button class="btn-gg-outline btn-sm" onclick="cancelRequest('${req.id}')">Cancel request</button>
             </div>
           </div>
-          <div class="d-flex align-items-center gap-2">
-            <span class="text-tertiary-gg" style="font-size:.8rem;">Pending</span>
-            <button class="btn-gg-outline btn-sm" onclick="cancelRequest('${req.id}')">Cancel Request</button>
-          </div>
-        </div>
-      `;
-    });
+        `;
+      });
+      html += '</div>';
+    }
 
     listEl.innerHTML = html;
   }
@@ -320,24 +386,25 @@
     const listEl = document.getElementById('friends-list');
     if (!listEl) return;
     if (friends.length === 0) {
-      listEl.innerHTML = '<p class="text-muted-gg" style="font-size:.85rem;">You haven\'t added any friends yet.</p>';
+      listEl.innerHTML = '<div class="empty-section"><p class="text-muted-gg" style="font-size:.85rem;">Your friends will appear here once a request is accepted.</p></div>';
       return;
     }
 
     let html = '';
     friends.forEach(f => {
-      const initial = (f.displayName || '?').charAt(0).toUpperCase();
-      const ghTag = f.githubUsername ? `@${f.githubUsername}` : '';
+      const ghTag = f.githubUsername ? `@${f.githubUsername}` : 'GitHub not connected';
+      const connectedSince = formatConnectedSince(f.friendsSince);
       html += `
-        <div class="user-card">
+        <div class="user-card friend-card">
           <div class="user-info">
-            <div class="user-avatar">${initial}</div>
-            <div>
+            ${renderUserAvatar(f)}
+            <div class="friend-card-main">
               <div class="user-name">${escapeHtml(f.displayName)}</div>
               <div class="user-handle">${escapeHtml(ghTag)}</div>
+              <div class="friend-status"><span class="badge-gg badge-status-committed">Friends</span>${connectedSince ? `<span class="text-muted-gg ms-2" style="font-size:.75rem;">Connected ${connectedSince}</span>` : ''}</div>
             </div>
           </div>
-          <div class="d-flex gap-2">
+          <div class="friend-actions">
             <button class="btn-gg-primary btn-sm" onclick="viewProgress('${f.userId}')">View Progress</button>
             <button class="btn-gg-danger btn-sm" onclick="removeFriend('${f.userId}', '${escapeHtml(f.displayName)}')">Remove</button>
           </div>
@@ -551,6 +618,13 @@
   document.getElementById('progress-modal-backdrop')?.addEventListener('click', e => {
     if (e.target === document.getElementById('progress-modal-backdrop')) closeModal();
   });
+
+  function formatConnectedSince(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+  }
 
   function escapeHtml(str) {
     if (!str) return '';

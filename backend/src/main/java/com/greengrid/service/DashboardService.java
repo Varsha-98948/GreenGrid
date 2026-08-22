@@ -81,7 +81,7 @@ public class DashboardService {
         );
     }
 
-    private List<DashboardResponse.ContributionDay> buildContributionCalendar(UUID userId, LocalDate today) {
+    public List<DashboardResponse.ContributionDay> buildContributionCalendar(UUID userId, LocalDate today) {
         LocalDate since = today.minusDays(364);
         Map<LocalDate, Long> counts = problemRepository.countPerDaySince(userId, since).stream()
                 .collect(Collectors.toMap(ProblemRepository.DailyCount::getDay, ProblemRepository.DailyCount::getTotal));

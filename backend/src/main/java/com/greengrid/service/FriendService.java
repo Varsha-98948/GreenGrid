@@ -24,17 +24,20 @@ public class FriendService {
     private final FriendshipRepository friendshipRepository;
     private final GitHubAccountRepository gitHubAccountRepository;
     private final ProblemRepository problemRepository;
+    private final DashboardService dashboardService;
 
     public FriendService(UserRepository userRepository,
                          FriendRequestRepository friendRequestRepository,
                          FriendshipRepository friendshipRepository,
                          GitHubAccountRepository gitHubAccountRepository,
-                         ProblemRepository problemRepository) {
+                         ProblemRepository problemRepository,
+                         DashboardService dashboardService) {
         this.userRepository = userRepository;
         this.friendRequestRepository = friendRequestRepository;
         this.friendshipRepository = friendshipRepository;
         this.gitHubAccountRepository = gitHubAccountRepository;
         this.problemRepository = problemRepository;
+        this.dashboardService = dashboardService;
     }
 
     @Transactional(readOnly = true)
@@ -275,7 +278,8 @@ public class FriendService {
                 currentStreak,
                 masteryPercentage,
                 difficultyBreakdown,
-                languageBreakdown
+                languageBreakdown,
+                dashboardService.buildContributionCalendar(targetUserId, LocalDate.now(zone))
         );
     }
 

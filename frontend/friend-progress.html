@@ -8,26 +8,55 @@
 <link href="css/styles.css" rel="stylesheet">
 </head>
 <body>
-
 <div id="gg-page">
   <div class="gg-page-header">
     <div>
-      <h1 class="gg-page-title" id="friend-name">Friend Progress</h1>
-      <p class="gg-page-subtitle" id="friend-handle"></p>
+      <p class="gg-page-subtitle" style="margin:0 0 8px;">Friend progress</p>
+      <div class="d-flex align-items-center gap-3">
+        <div class="gg-avatar" id="friend-avatar" style="width:58px;height:58px;font-size:1.35rem;border-radius:var(--radius-lg);">?</div>
+        <div>
+          <h1 class="gg-page-title mb-1" id="friend-name">Friend Progress</h1>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="text-secondary-gg" id="friend-handle"></span>
+            <span class="badge-gg badge-status-committed">Friends</span>
+          </div>
+        </div>
+      </div>
     </div>
     <a class="btn-gg-outline" href="friends.html">Back to Friends</a>
   </div>
 
-  <div class="row g-3 mb-4">
-    <div class="col-6 col-lg-3"><div class="gg-stat-card"><div class="gg-stat-value" id="total-problems">0</div><div class="gg-stat-label">Total Solved</div></div></div>
-    <div class="col-6 col-lg-3"><div class="gg-stat-card"><div class="gg-stat-value" id="mastery-percentage">0%</div><div class="gg-stat-label">Mastery Rate</div></div></div>
-    <div class="col-6 col-lg-3"><div class="gg-stat-card"><div class="gg-stat-value" id="current-streak">0</div><div class="gg-stat-label">Current Streak</div></div></div>
-    <div class="col-6 col-lg-3"><div class="gg-stat-card"><div class="gg-stat-value" id="starred-count">0</div><div class="gg-stat-label">Starred</div></div></div>
+  <div class="row g-3 mb-4" id="stat-cards">
+    <div class="col-6 col-lg-3"><div class="gg-stat-card gg-skeleton" style="height:112px;"></div></div>
+    <div class="col-6 col-lg-3"><div class="gg-stat-card gg-skeleton" style="height:112px;"></div></div>
+    <div class="col-6 col-lg-3"><div class="gg-stat-card gg-skeleton" style="height:112px;"></div></div>
+    <div class="col-6 col-lg-3"><div class="gg-stat-card gg-skeleton" style="height:112px;"></div></div>
+  </div>
+
+  <div class="gg-card mb-4">
+    <div class="d-flex justify-content-between align-items-center gap-3 mb-3 flex-wrap">
+      <div>
+        <div class="gg-section-title mb-1">Contribution Calendar</div>
+        <div class="text-muted-gg" style="font-size:.8rem;">Problems solved over the last year</div>
+      </div>
+      <div class="contrib-legend" aria-label="Contribution intensity legend">
+        <span>Less</span>
+        <div class="contrib-legend-cell" style="background:var(--bg-elevated);border:1px solid var(--border-soft);"></div>
+        <div class="contrib-legend-cell" style="background:rgba(63,214,142,0.20);"></div>
+        <div class="contrib-legend-cell" style="background:rgba(63,214,142,0.45);"></div>
+        <div class="contrib-legend-cell" style="background:rgba(63,214,142,0.70);"></div>
+        <div class="contrib-legend-cell" style="background:var(--accent);"></div>
+        <span>More</span>
+      </div>
+    </div>
+    <div class="contrib-grid" id="contrib-calendar"></div>
+    <div class="gg-empty-state" id="contrib-empty" style="display:none;padding:22px 0;"><p class="gg-empty-desc" style="margin:0;">No contribution data is available yet.</p></div>
   </div>
 
   <div class="row g-3">
-    <div class="col-lg-6"><div class="gg-card"><div class="gg-section-title">Mastery Breakdown</div><div id="mastery-breakdown"></div></div></div>
-    <div class="col-lg-6"><div class="gg-card"><div class="gg-section-title">Difficulty Breakdown</div><div class="d-flex flex-wrap gap-2" id="difficulty-breakdown"></div></div></div>
+    <div class="col-lg-4"><div class="gg-card h-100"><div class="gg-section-title mb-3">Progress Breakdown</div><div id="progress-breakdown"></div></div></div>
+    <div class="col-lg-4"><div class="gg-card h-100"><div class="gg-section-title mb-3">Difficulty Breakdown</div><div id="difficulty-breakdown"></div></div></div>
+    <div class="col-lg-4"><div class="gg-card h-100"><div class="gg-section-title mb-3">Languages</div><div class="d-flex flex-wrap gap-2" id="language-breakdown"></div></div></div>
   </div>
 </div>
 
@@ -39,10 +68,57 @@
   GGAuth.requireAuth();
   GGShell.render('friends');
 
-  const setText = (id, value) => {
-    const element = document.getElementById(id);
-    if (element) element.textContent = value ?? '';
+  const ICONS = {
+    total: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+    streak: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>',
+    mastered: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg>',
+    starred: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.3-6.2 3.3 1.2-6.8-5-4.9 6.9-1z"/></svg>',
   };
+
+  function statCard(label, value, detail, icon, color) {
+    return `<div class="col-6 col-lg-3"><div class="gg-stat-card"><div class="d-flex align-items-center gap-2 mb-2"><div class="gg-stat-icon" style="background:${color}1a;color:${color};">${icon}</div><span class="gg-stat-label" style="margin-bottom:0">${label}</span></div><div class="gg-stat-value">${value}</div><div class="gg-stat-sub">${detail}</div></div></div>`;
+  }
+
+  function barRow(label, value, max, color) {
+    const percentage = max > 0 ? Math.max(4, Math.round((value / max) * 100)) : 0;
+    return `<div class="gg-bar-row"><div class="gg-bar-header"><span class="text-secondary-gg">${label}</span><span class="mono text-muted-gg" style="font-size:.78rem;">${value}</span></div><div class="gg-bar-track"><div class="gg-bar-fill" style="width:${percentage}%;background:${color};"></div></div></div>`;
+  }
+
+  function renderCalendar(days) {
+    const calendar = document.getElementById('contrib-calendar');
+    const empty = document.getElementById('contrib-empty');
+    if (!Array.isArray(days) || days.length === 0) {
+      calendar.style.display = 'none';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    calendar.style.display = '';
+    calendar.innerHTML = days.map(day => {
+      let level = 0;
+      if (day.count >= 1) level = 1;
+      if (day.count >= 2) level = 2;
+      if (day.count >= 4) level = 3;
+      if (day.count >= 6) level = 4;
+      return `<div class="contrib-cell" data-level="${level}" title="${day.date}: ${day.count} problem${day.count !== 1 ? 's' : ''} solved"></div>`;
+    }).join('');
+  }
+
+  function setFriendAvatar(progress) {
+    const avatar = document.getElementById('friend-avatar');
+    const initial = (progress.displayName || '?').charAt(0).toUpperCase();
+    if (!progress.avatarUrl) {
+      avatar.textContent = initial;
+      return;
+    }
+    try {
+      const url = new URL(progress.avatarUrl, window.location.origin);
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new Error('Unsupported avatar URL');
+      avatar.innerHTML = `<img src="${url.href}" alt="" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`;
+    } catch {
+      avatar.textContent = initial;
+    }
+  }
 
   async function loadFriendProgress() {
     const userId = new URLSearchParams(window.location.search).get('userId');
@@ -56,22 +132,34 @@
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
       const response = await GGApi.get(`/api/friends/${encodeURIComponent(userId)}/progress?timezone=${encodeURIComponent(timezone)}`);
       const progress = response.data;
-      const difficulties = progress.difficultyBreakdown || {};
+      if (!progress) throw new Error('Friend progress is unavailable');
 
-      setText('friend-name', progress.displayName || 'Friend Progress');
-      setText('friend-handle', progress.githubUsername ? `@${progress.githubUsername}` : '');
-      setText('total-problems', progress.totalProblems ?? 0);
-      setText('mastery-percentage', `${progress.masteryPercentage ?? 0}%`);
-      setText('current-streak', progress.currentStreak ?? 0);
-      setText('starred-count', progress.starredCount ?? 0);
-      document.getElementById('mastery-breakdown').innerHTML = `
-        <div class="d-flex justify-content-between mb-2"><span>Mastered</span><strong>${progress.masteredCount ?? 0}</strong></div>
-        <div class="d-flex justify-content-between mb-2"><span>Needs revision</span><strong>${progress.needsRevisionCount ?? 0}</strong></div>
-        <div class="d-flex justify-content-between"><span>Not set</span><strong>${progress.notSetCount ?? 0}</strong></div>`;
-      document.getElementById('difficulty-breakdown').innerHTML = `
-        <span class="badge-gg badge-diff-easy">Easy: ${difficulties.EASY || 0}</span>
-        <span class="badge-gg badge-diff-medium">Medium: ${difficulties.MEDIUM || 0}</span>
-        <span class="badge-gg badge-diff-hard">Hard: ${difficulties.HARD || 0}</span>`;
+      const difficulties = progress.difficultyBreakdown || {};
+      const languages = progress.languageBreakdown || {};
+      const progressValues = [progress.masteredCount ?? 0, progress.needsRevisionCount ?? 0, progress.notSetCount ?? 0];
+      const progressMax = Math.max(1, ...progressValues);
+      const difficultyMax = Math.max(1, difficulties.EASY || 0, difficulties.MEDIUM || 0, difficulties.HARD || 0);
+
+      document.getElementById('friend-name').textContent = progress.displayName || 'Friend Progress';
+      document.getElementById('friend-handle').textContent = progress.githubUsername ? `@${progress.githubUsername}` : 'GitHub not connected';
+      setFriendAvatar(progress);
+      document.getElementById('stat-cards').innerHTML =
+        statCard('Total Solved', progress.totalProblems ?? 0, 'all time', ICONS.total, 'var(--accent)') +
+        statCard('Current Streak', `${progress.currentStreak ?? 0} days`, 'consecutive days', ICONS.streak, 'var(--warning)') +
+        statCard('Mastered', progress.masteredCount ?? 0, 'problems retained', ICONS.mastered, 'var(--accent)') +
+        statCard('Starred', progress.starredCount ?? 0, 'saved problems', ICONS.starred, 'var(--warning)');
+      document.getElementById('progress-breakdown').innerHTML =
+        barRow('Mastered', progress.masteredCount ?? 0, progressMax, 'var(--accent)') +
+        barRow('Needs revision', progress.needsRevisionCount ?? 0, progressMax, 'var(--warning)') +
+        barRow('Not set', progress.notSetCount ?? 0, progressMax, 'var(--text-muted)');
+      document.getElementById('difficulty-breakdown').innerHTML =
+        barRow('Easy', difficulties.EASY || 0, difficultyMax, 'var(--status-committed)') +
+        barRow('Medium', difficulties.MEDIUM || 0, difficultyMax, 'var(--warning)') +
+        barRow('Hard', difficulties.HARD || 0, difficultyMax, 'var(--danger)');
+      document.getElementById('language-breakdown').innerHTML = Object.keys(languages).length
+        ? Object.entries(languages).map(([language, count]) => `<span class="badge-gg badge-neutral">${language}: ${count}</span>`).join('')
+        : '<span class="text-muted-gg" style="font-size:.82rem;">No language data</span>';
+      renderCalendar(progress.contributionCalendar);
     } catch (error) {
       GGToast.error(error);
     } finally {
