@@ -24,6 +24,10 @@ public interface ProblemRepository extends JpaRepository<Problem, UUID>, JpaSpec
 
     Optional<Problem> findByIdAndUserId(UUID id, UUID userId);
 
+    @Query(value = "SELECT * FROM problems p WHERE p.user_id = :userId " +
+            "AND LOWER(REGEXP_REPLACE(TRIM(p.title), '\\s+', ' ', 'g')) = :normalizedTitle LIMIT 1", nativeQuery = true)
+    Optional<Problem> findDuplicateForUser(@Param("userId") UUID userId, @Param("normalizedTitle") String normalizedTitle);
+
     Page<Problem> findAllByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);
 
     List<Problem> findTop10ByUserIdOrderByCreatedAtDesc(UUID userId);

@@ -62,10 +62,18 @@ public class ProblemService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
+        String normalizedTitle = normalizeTitle(request.title());
+        var duplicateOpt = problemRepository.findDuplicateForUser(userId, normalizedTitle);
+        if (duplicateOpt.isPresent()) {
+            throw new com.greengrid.exception.DuplicateProblemException(
+                    "A problem with title '" + request.title().trim() + "' already exists.",
+                    duplicateOpt.get().getId());
+        }
+
         Problem problem = new Problem();
         problem.setUser(user);
         problem.setPlatform(request.platform());
-        problem.setTitle(request.title());
+        problem.setTitle(request.title().trim());
         problem.setProblemUrl(request.problemUrl());
         problem.setDifficulty(request.difficulty());
         problem.setLanguage(request.language());
@@ -77,7 +85,17 @@ public class ProblemService {
         problem.setTags(resolveTags(user, request.topics()));
         problem.setCommitStatus("PENDING");
 
-        problem = problemRepository.save(problem);
+        try {
+            problem = problemRepository.save(problem);
+        } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+            var existing = problemRepository.findDuplicateForUser(userId, normalizedTitle);
+            if (existing.isPresent()) {
+                throw new com.greengrid.exception.DuplicateProblemException(
+                        "A problem with title '" + request.title().trim() + "' already exists.",
+                        existing.get().getId());
+            }
+            throw ex;
+        }
 
         // Create Revision 1
         ProblemRevision rev1 = new ProblemRevision();
@@ -400,5 +418,10 @@ public class ProblemService {
                 r.getCommitStatus(),
                 r.getCreatedAt() != null ? r.getCreatedAt().atOffset(ZoneOffset.UTC) : null
         );
+    }
+
+    private String normalizeTitle(String title) {
+        if (title == null) return "";
+        return title.trim().replaceAll("\\s+", " ").toLowerCase();
     }
 }

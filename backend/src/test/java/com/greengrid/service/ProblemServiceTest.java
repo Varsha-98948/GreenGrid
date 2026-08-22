@@ -266,4 +266,72 @@ public class ProblemServiceTest {
         var pageAfterAdd = problemService.searchProblems(testUser.getId(), null, null, null, null, null, null, null, null, null, pageable);
         assertEquals(newResp.id(), pageAfterAdd.getContent().get(0).id(), "Newly created problem 66 must appear at top of list");
     }
+
+    @Test
+    void testDuplicateProblemPrevention() {
+        // 1. Create initial problem "Two Sum"
+        CreateProblemRequest req1 = new CreateProblemRequest(
+                "LeetCode", "Two Sum", "https://leetcode.com/problems/two-sum/",
+                Difficulty.EASY, List.of("Array"), "Java",
+                "class Solution {}", "Notes 1", "O(n)", "O(n)", LocalDate.now()
+        );
+        ProblemResponse resp1 = problemService.createProblem(testUser.getId(), req1);
+        assertNotNull(resp1.id());
+
+        // 2. Exact duplicate title for same user throws DuplicateProblemException
+        CreateProblemRequest reqDuplicate = new CreateProblemRequest(
+                "LeetCode", "Two Sum", "https://leetcode.com/problems/two-sum/",
+                Difficulty.EASY, List.of("Array"), "Java",
+                "class Solution {}", "Notes dup", "O(n)", "O(n)", LocalDate.now()
+        );
+        com.greengrid.exception.DuplicateProblemException ex1 = assertThrows(
+                com.greengrid.exception.DuplicateProblemException.class,
+                () -> problemService.createProblem(testUser.getId(), reqDuplicate)
+        );
+        assertEquals(resp1.id(), ex1.getExistingProblemId());
+
+        // 3. Case difference and extra spaces ("  TWO   SUM  ") throws DuplicateProblemException
+        CreateProblemRequest reqNormalized = new CreateProblemRequest(
+                "LeetCode", "  TWO   SUM  ", "https://leetcode.com/problems/two-sum/",
+                Difficulty.EASY, List.of("Array"), "Java",
+                "class Solution {}", "Notes norm", "O(n)", "O(n)", LocalDate.now()
+        );
+        com.greengrid.exception.DuplicateProblemException ex2 = assertThrows(
+                com.greengrid.exception.DuplicateProblemException.class,
+                () -> problemService.createProblem(testUser.getId(), reqNormalized)
+        );
+        assertEquals(resp1.id(), ex2.getExistingProblemId());
+
+        // 4. Similar but non-identical titles ("Binary Tree" vs "Binary Tree Traversal") allowed
+        CreateProblemRequest reqSimilar1 = new CreateProblemRequest(
+                "LeetCode", "Binary Tree", "https://leetcode.com/problems/bt/",
+                Difficulty.EASY, List.of("Tree"), "Java",
+                "class Solution {}", "Notes BT", "O(n)", "O(n)", LocalDate.now()
+        );
+        ProblemResponse btResp1 = problemService.createProblem(testUser.getId(), reqSimilar1);
+
+        CreateProblemRequest reqSimilar2 = new CreateProblemRequest(
+                "LeetCode", "Binary Tree Traversal", "https://leetcode.com/problems/btt/",
+                Difficulty.EASY, List.of("Tree"), "Java",
+                "class Solution {}", "Notes BTT", "O(n)", "O(n)", LocalDate.now()
+        );
+        ProblemResponse btResp2 = problemService.createProblem(testUser.getId(), reqSimilar2);
+        assertNotEquals(btResp1.id(), btResp2.id());
+
+        // 5. Different users can have the same title
+        User secondUser = new User();
+        secondUser.setEmail("seconduser_" + UUID.randomUUID() + "@greengrid.dev");
+        secondUser.setDisplayName("Second User");
+        secondUser = userRepository.save(secondUser);
+
+        ProblemResponse respUser2 = problemService.createProblem(secondUser.getId(), req1);
+        assertNotNull(respUser2.id());
+
+        // 6. Adding a revision to existing problem works cleanly without duplicate exception
+        CreateRevisionRequest revReq = new CreateRevisionRequest(
+                "Revision 2", "Python", "def twoSum(): pass", "Rev notes", "O(n)", "O(n)"
+        );
+        ProblemResponse revResp = problemService.createRevision(testUser.getId(), resp1.id(), revReq);
+        assertEquals(2, revResp.revisionCount());
+    }
 }

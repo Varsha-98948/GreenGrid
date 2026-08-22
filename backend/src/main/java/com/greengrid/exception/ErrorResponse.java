@@ -13,15 +13,20 @@ public record ErrorResponse(
         String error,
         String message,
         String path,
+        String existingProblemId,
         List<FieldViolation> fieldErrors
 ) {
     public record FieldViolation(String field, String message) {}
 
     public static ErrorResponse of(int status, String error, String message, String path) {
-        return new ErrorResponse(Instant.now(), status, error, message, path, List.of());
+        return new ErrorResponse(Instant.now(), status, error, message, path, null, List.of());
+    }
+
+    public static ErrorResponse ofConflict(String message, String existingProblemId, String path) {
+        return new ErrorResponse(Instant.now(), 409, "Conflict", message, path, existingProblemId, List.of());
     }
 
     public static ErrorResponse ofFieldErrors(String message, String path, List<FieldViolation> violations) {
-        return new ErrorResponse(Instant.now(), 400, "Validation Failed", message, path, violations);
+        return new ErrorResponse(Instant.now(), 400, "Validation Failed", message, path, null, violations);
     }
 }

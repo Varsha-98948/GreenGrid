@@ -36,6 +36,14 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of(400, "Bad Request", ex.getMessage(), req.getRequestURI()));
     }
 
+    @ExceptionHandler(DuplicateProblemException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateProblem(DuplicateProblemException ex, HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.ofConflict(ex.getMessage(),
+                        ex.getExistingProblemId() != null ? ex.getExistingProblemId().toString() : null,
+                        req.getRequestURI()));
+    }
+
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ErrorResponse> handleConflict(ConflictException ex, HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.CONFLICT)

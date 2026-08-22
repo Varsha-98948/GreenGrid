@@ -499,7 +499,29 @@
 
       window.location.href = 'dashboard.html';
     } catch (err) {
-      GGToast.error(err);
+      if (err && (err.status === 409 || err.existingProblemId)) {
+        const existingId = err.existingProblemId;
+        const msg = err.message || 'A problem with this title already exists.';
+        let dupAlert = document.getElementById('duplicate-alert');
+        if (!dupAlert) {
+          dupAlert = document.createElement('div');
+          dupAlert.id = 'duplicate-alert';
+          dupAlert.className = 'alert alert-warning d-flex justify-content-between align-items-center mb-4';
+          dupAlert.style.cssText = 'border-radius:10px;background:rgba(255,193,7,0.12);border:1px solid rgba(255,193,7,0.3);color:var(--warning);padding:12px 16px;';
+          const headerEl = document.querySelector('.gg-page-header');
+          if (headerEl) headerEl.insertAdjacentElement('afterend', dupAlert);
+          else document.getElementById('gg-page').prepend(dupAlert);
+        }
+        dupAlert.innerHTML = `
+          <div>
+            <strong>Duplicate Problem:</strong> ${msg}
+          </div>
+          ${existingId ? `<a href="problem-form.html?id=${existingId}" class="btn-gg-outline btn-sm" style="white-space:nowrap;margin-left:12px;">Open Existing Problem</a>` : ''}
+        `;
+        GGToast.error(msg);
+      } else {
+        GGToast.error(err);
+      }
       btn.disabled    = false;
       document.getElementById('save-btn-text').textContent = isEditMode ? 'Save Changes & Commit' : 'Save & Commit to GitHub';
       GGShell.progress.done();
