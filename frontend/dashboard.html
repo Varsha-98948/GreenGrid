@@ -75,6 +75,41 @@
     </div>
   </div>
 
+  <!-- Quick Dashboard Search / Filter Bar -->
+  <div class="gg-card mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="gg-section-title mb-0">Search &amp; Filter Problems</div>
+      <a href="search.html" class="text-accent" style="font-size:.8rem;text-decoration:none;">View all problems &rarr;</a>
+    </div>
+    <form id="dash-filter-form" action="search.html" method="GET">
+      <div class="row g-2">
+        <div class="col-md-5">
+          <input type="text" class="form-control-gg" name="search" id="d-search" placeholder="Search title or topics (e.g. Binary Tree)...">
+        </div>
+        <div class="col-md-3">
+          <select class="form-select-gg" name="starred" id="d-starred">
+            <option value="">Starred: All</option>
+            <option value="true">Starred Only ★</option>
+            <option value="false">Not Starred</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select-gg" name="revisionStatus" id="d-rev-status">
+            <option value="">Revision Status: All</option>
+            <option value="NONE">Not Set</option>
+            <option value="NEEDS_REVISION">Needs Revision</option>
+            <option value="MASTERED">Mastered</option>
+          </select>
+        </div>
+        <div class="col-md-1 d-flex">
+          <button type="submit" class="btn-gg-primary w-100" title="Filter problems" aria-label="Search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
   <!-- Recent commits + repo status -->
   <div class="row g-3">
     <div class="col-lg-8">

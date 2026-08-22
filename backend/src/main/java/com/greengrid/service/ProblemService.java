@@ -312,12 +312,16 @@ public class ProblemService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ProblemResponse> searchProblems(UUID userId, String title, String topic, Difficulty difficulty,
-                                                 String language, String platform, LocalDate date,
+    public Page<ProblemResponse> searchProblems(UUID userId, String search, String title, String topic, Difficulty difficulty,
+                                                 String language, String platform, Boolean favorite,
+                                                 RevisionStatus revisionStatus, LocalDate date,
                                                  Pageable pageable) {
         var spec = org.springframework.data.jpa.domain.Specification.where(
                 com.greengrid.repository.ProblemSpecifications.belongsToUser(userId));
 
+        if (search != null && !search.isBlank()) {
+            spec = spec.and(com.greengrid.repository.ProblemSpecifications.textSearch(search));
+        }
         if (title != null && !title.isBlank()) {
             spec = spec.and(com.greengrid.repository.ProblemSpecifications.titleContains(title));
         }
@@ -332,6 +336,12 @@ public class ProblemService {
         }
         if (platform != null && !platform.isBlank()) {
             spec = spec.and(com.greengrid.repository.ProblemSpecifications.hasPlatform(platform));
+        }
+        if (favorite != null) {
+            spec = spec.and(com.greengrid.repository.ProblemSpecifications.isFavorite(favorite));
+        }
+        if (revisionStatus != null) {
+            spec = spec.and(com.greengrid.repository.ProblemSpecifications.hasRevisionStatus(revisionStatus));
         }
         if (date != null) {
             spec = spec.and(com.greengrid.repository.ProblemSpecifications.solvedOn(date));

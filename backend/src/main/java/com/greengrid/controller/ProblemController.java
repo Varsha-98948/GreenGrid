@@ -87,25 +87,32 @@ public class ProblemController {
     public ApiResponse<Page<ProblemResponse>> list(@AuthenticationPrincipal UserPrincipal principal,
                                                     @RequestParam(defaultValue = "0") int page,
                                                     @RequestParam(defaultValue = "20") int size) {
-        Pageable pageable = PageRequest.of(page, Math.min(size, 100));
+        Pageable pageable = PageRequest.of(page, Math.min(size, 100), org.springframework.data.domain.Sort.by(
+                org.springframework.data.domain.Sort.Order.desc("createdAt"),
+                org.springframework.data.domain.Sort.Order.desc("id")));
         return ApiResponse.ok(problemService.listProblems(principal.getId(), pageable));
     }
 
     @GetMapping("/search")
     public ApiResponse<Page<ProblemResponse>> search(@AuthenticationPrincipal UserPrincipal principal,
+                                                      @RequestParam(required = false) String search,
                                                       @RequestParam(required = false) String title,
                                                       @RequestParam(required = false) String topic,
                                                       @RequestParam(required = false) com.greengrid.entity.Difficulty difficulty,
                                                       @RequestParam(required = false) String language,
                                                       @RequestParam(required = false) String platform,
+                                                      @RequestParam(required = false) Boolean favorite,
+                                                      @RequestParam(required = false) com.greengrid.entity.RevisionStatus revisionStatus,
                                                       @RequestParam(required = false)
                                                       @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
                                                       java.time.LocalDate date,
                                                       @RequestParam(defaultValue = "0") int page,
                                                       @RequestParam(defaultValue = "20") int size) {
-        Pageable pageable = PageRequest.of(page, Math.min(size, 100));
+        Pageable pageable = PageRequest.of(page, Math.min(size, 100), org.springframework.data.domain.Sort.by(
+                org.springframework.data.domain.Sort.Order.desc("createdAt"),
+                org.springframework.data.domain.Sort.Order.desc("id")));
         return ApiResponse.ok(problemService.searchProblems(
-                principal.getId(), title, topic, difficulty, language, platform, date, pageable));
+                principal.getId(), search, title, topic, difficulty, language, platform, favorite, revisionStatus, date, pageable));
     }
 
     @GetMapping("/fetch-metadata")

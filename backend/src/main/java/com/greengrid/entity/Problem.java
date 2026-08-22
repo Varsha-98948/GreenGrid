@@ -108,7 +108,7 @@ public class Problem extends BaseEntity {
     )
     private Set<Tag> tags = new HashSet<>();
 
-    @jakarta.persistence.OneToMany(mappedBy = "problem", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @jakarta.persistence.OneToMany(mappedBy = "problem", cascade = CascadeType.ALL, orphanRemoval = true)
     @jakarta.persistence.OrderBy("revisionNumber ASC")
     private java.util.List<ProblemRevision> revisions = new java.util.ArrayList<>();
 }
