@@ -469,38 +469,57 @@
       const res = await GGApi.get(`/api/friends/${userId}/progress?timezone=${encodeURIComponent(tz)}`);
       const p = res.data;
 
-      document.getElementById('modal-user-avatar').textContent = (p.displayName || '?').charAt(0).toUpperCase();
-      document.getElementById('modal-user-name').textContent = p.displayName;
-      document.getElementById('modal-user-handle').textContent = p.githubUsername ? `@${p.githubUsername}` : '';
+      const setTxt = (id, txt) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = (txt !== undefined && txt !== null) ? txt : '';
+      };
 
-      document.getElementById('m-total-problems').textContent = p.totalProblems;
-      document.getElementById('m-mastery-pct').textContent = p.masteryPercentage + '%';
-      document.getElementById('m-streak').textContent = p.currentStreak + 'd 🔥';
-      document.getElementById('m-starred').textContent = p.starredCount;
+      const avatarEl = document.getElementById('modal-user-avatar');
+      if (avatarEl) {
+        const initial = (p?.displayName || '?').charAt(0).toUpperCase();
+        const avatarUrl = safeAvatarUrl(p?.avatarUrl);
+        if (avatarUrl) {
+          avatarEl.innerHTML = `<img class="user-avatar" src="${escapeHtml(avatarUrl)}" alt="" referrerpolicy="no-referrer">`;
+        } else {
+          avatarEl.textContent = initial;
+        }
+      }
 
-      document.getElementById('m-mastered-cnt').textContent = p.masteredCount;
-      document.getElementById('m-needs-rev-cnt').textContent = p.needsRevisionCount;
-      document.getElementById('m-not-set-cnt').textContent = p.notSetCount;
+      setTxt('modal-user-name', p.displayName || 'Developer');
+      setTxt('modal-user-handle', p.githubUsername ? `@${p.githubUsername}` : '');
+
+      setTxt('m-total-problems', p.totalProblems ?? 0);
+      setTxt('m-mastery-pct', (p.masteryPercentage ?? 0) + '%');
+      setTxt('m-streak', (p.currentStreak ?? 0) + 'd 🔥');
+      setTxt('m-starred', p.starredCount ?? 0);
+
+      setTxt('m-mastered-cnt', p.masteredCount ?? 0);
+      setTxt('m-needs-rev-cnt', p.needsRevisionCount ?? 0);
+      setTxt('m-not-set-cnt', p.notSetCount ?? 0);
 
       // Difficulty breakdown
       const diffList = document.getElementById('m-difficulty-list');
-      const diffs = p.difficultyBreakdown || {};
-      diffList.innerHTML = `
-        <span class="badge-gg badge-diff-easy" style="font-size:.85rem;padding:.4rem .8rem;">Easy: ${diffs.EASY || 0}</span>
-        <span class="badge-gg badge-diff-medium" style="font-size:.85rem;padding:.4rem .8rem;">Medium: ${diffs.MEDIUM || 0}</span>
-        <span class="badge-gg badge-diff-hard" style="font-size:.85rem;padding:.4rem .8rem;">Hard: ${diffs.HARD || 0}</span>
-      `;
+      if (diffList) {
+        const diffs = p.difficultyBreakdown || {};
+        diffList.innerHTML = `
+          <span class="badge-gg badge-diff-easy" style="font-size:.85rem;padding:.4rem .8rem;">Easy: ${diffs.EASY || 0}</span>
+          <span class="badge-gg badge-diff-medium" style="font-size:.85rem;padding:.4rem .8rem;">Medium: ${diffs.MEDIUM || 0}</span>
+          <span class="badge-gg badge-diff-hard" style="font-size:.85rem;padding:.4rem .8rem;">Hard: ${diffs.HARD || 0}</span>
+        `;
+      }
 
       // Language breakdown
       const langList = document.getElementById('m-language-list');
-      const langs = p.languageBreakdown || {};
-      const langKeys = Object.keys(langs);
-      if (langKeys.length === 0) {
-        langList.innerHTML = '<span class="text-tertiary-gg" style="font-size:.8rem;">No language data</span>';
-      } else {
-        langList.innerHTML = langKeys.map(k => `
-          <span class="badge-gg badge-neutral" style="font-size:.8rem;">${escapeHtml(k)}: ${langs[k]}</span>
-        `).join('');
+      if (langList) {
+        const langs = p.languageBreakdown || {};
+        const langKeys = Object.keys(langs);
+        if (langKeys.length === 0) {
+          langList.innerHTML = '<span class="text-tertiary-gg" style="font-size:.8rem;">No language data</span>';
+        } else {
+          langList.innerHTML = langKeys.map(k => `
+            <span class="badge-gg badge-neutral" style="font-size:.8rem;">${escapeHtml(k)}: ${langs[k]}</span>
+          `).join('');
+        }
       }
 
       openModal();
@@ -512,11 +531,11 @@
   }
 
   function openModal() {
-    document.getElementById('progress-modal-backdrop').classList.add('show');
+    document.getElementById('progress-modal-backdrop')?.classList.add('show');
   }
 
   function closeModal() {
-    document.getElementById('progress-modal-backdrop').classList.remove('show');
+    document.getElementById('progress-modal-backdrop')?.classList.remove('show');
   }
 
   document.getElementById('modal-close-btn')?.addEventListener('click', closeModal);
