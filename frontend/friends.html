@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Connect with GreenGrid peers and view aggregated learning progress.">
+<title>Friends — GreenGrid</title>
+<link href="css/styles.css" rel="stylesheet">
+<style>
+  .user-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1.1rem;
+    border-radius: 10px;
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    margin-bottom: 0.75rem;
+    transition: transform .15s ease, border-color .15s ease;
+  }
+  .user-card:hover {
+    border-color: var(--border-focus);
+  }
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+  }
+  .user-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: var(--surface-elevated);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    border: 1px solid var(--border-subtle);
+  }
+  .user-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+  }
+  .user-handle {
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+  }
+  .progress-stat-card {
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 1.1rem;
+    text-align: center;
+  }
+  .progress-stat-val {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--accent);
+  }
+  .progress-stat-lbl {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0.25rem;
+  }
+  .modal-backdrop-gg {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s ease;
+  }
+  .modal-backdrop-gg.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .modal-gg {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 1.75rem;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  }
+</style>
+</head>
+<body>
+
+<div id="gg-page">
+  <!-- Page header -->
+  <div class="gg-page-header">
+    <div>
+      <h1 class="gg-page-title">Friends</h1>
+      <p class="gg-page-subtitle">Connect with developer peers and view aggregate learning progress.</p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left Column: Search & Pending Requests -->
+    <div class="col-lg-6">
+      
+      <!-- Search Users Card -->
+      <div class="gg-card mb-4">
+        <div class="gg-section-title">Find Developer Peers</div>
+        <p class="text-secondary-gg mb-3" style="font-size:.85rem;">Search users by display name to connect.</p>
+        <div class="d-flex gap-2 mb-3">
+          <input type="text" class="form-control-gg" id="user-search-input" placeholder="Search display name...">
+          <button class="btn-gg-primary" id="user-search-btn">Search</button>
+        </div>
+        <div id="search-results-list"></div>
+      </div>
+
+      <!-- Pending Requests Card -->
+      <div class="gg-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="gg-section-title mb-0">Pending Requests</div>
+          <span class="badge-gg badge-neutral" id="pending-badge-count">0</span>
+        </div>
+        
+        <div id="pending-requests-list">
+          <p class="text-muted-gg" style="font-size:.85rem;">No pending friend requests.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Friends List -->
+    <div class="col-lg-6">
+      <div class="gg-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="gg-section-title mb-0">Your Friends</div>
+          <span class="badge-gg badge-neutral" id="friends-badge-count">0</span>
+        </div>
+
+        <div id="friends-list">
+          <p class="text-muted-gg" style="font-size:.85rem;">You haven't added any friends yet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Friend Progress Modal -->
+<div class="modal-backdrop-gg" id="progress-modal-backdrop">
+  <div class="modal-gg">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div class="d-flex align-items-center gap-3">
+        <div class="user-avatar" id="modal-user-avatar">?</div>
+        <div>
+          <h4 class="mb-0" id="modal-user-name" style="font-weight:700;color:var(--text-primary);">Developer</h4>
+          <span class="text-tertiary-gg" id="modal-user-handle" style="font-size:.8rem;">@developer</span>
+        </div>
+      </div>
+      <button class="btn-gg-icon" id="modal-close-btn" aria-label="Close modal">&times;</button>
+    </div>
+
+    <!-- Aggregated Metrics Grid -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-sm-3">
+        <div class="progress-stat-card">
+          <div class="progress-stat-val" id="m-total-problems">0</div>
+          <div class="progress-stat-lbl">Total Solved</div>
+        </div>
+      </div>
+      <div class="col-6 col-sm-3">
+        <div class="progress-stat-card">
+          <div class="progress-stat-val" id="m-mastery-pct">0%</div>
+          <div class="progress-stat-lbl">Mastery Rate</div>
+        </div>
+      </div>
+      <div class="col-6 col-sm-3">
+        <div class="progress-stat-card">
+          <div class="progress-stat-val" id="m-streak">0</div>
+          <div class="progress-stat-lbl">Current Streak</div>
+        </div>
+      </div>
+      <div class="col-6 col-sm-3">
+        <div class="progress-stat-card">
+          <div class="progress-stat-val" id="m-starred">0</div>
+          <div class="progress-stat-lbl">Starred ★</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mastery Breakdown -->
+    <div class="gg-card mb-4" style="background:var(--surface-elevated);">
+      <div class="gg-section-title mb-3">Mastery Breakdown</div>
+      <div class="d-flex justify-content-between align-items-center mb-2" style="font-size:.85rem;">
+        <span class="text-secondary-gg">Mastered</span>
+        <span class="fw-bold" id="m-mastered-cnt" style="color:var(--status-committed);">0</span>
+      </div>
+      <div class="d-flex justify-content-between align-items-center mb-2" style="font-size:.85rem;">
+        <span class="text-secondary-gg">Needs Revision</span>
+        <span class="fw-bold" id="m-needs-rev-cnt" style="color:var(--status-failed);">0</span>
+      </div>
+      <div class="d-flex justify-content-between align-items-center" style="font-size:.85rem;">
+        <span class="text-secondary-gg">Not Set</span>
+        <span class="fw-bold" id="m-not-set-cnt" style="color:var(--text-tertiary);">0</span>
+      </div>
+    </div>
+
+    <!-- Difficulty Breakdown -->
+    <div class="gg-card mb-4" style="background:var(--surface-elevated);">
+      <div class="gg-section-title mb-3">Difficulty Breakdown</div>
+      <div id="m-difficulty-list" class="d-flex gap-3 flex-wrap"></div>
+    </div>
+
+    <!-- Language Breakdown -->
+    <div class="gg-card" style="background:var(--surface-elevated);">
+      <div class="gg-section-title mb-3">Language Usage</div>
+      <div id="m-language-list" class="d-flex gap-2 flex-wrap"></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/toast.js"></script>
+<script src="js/shell.js"></script>
+<script>
+  GGShell.render('friends');
+
+  // Load Friends & Pending Requests on init
+  async function loadData() {
+    GGShell.progress.show();
+    try {
+      await Promise.all([loadPendingRequests(), loadFriends()]);
+    } catch (err) {
+      GGToast.error(err);
+    } finally {
+      GGShell.progress.done();
+    }
+  }
+
+  // Load pending incoming/outgoing requests
+  async function loadPendingRequests() {
+    const res = await GGApi.get('/api/friends/requests');
+    const { incoming, outgoing } = res.data;
+
+    const badge = document.getElementById('pending-badge-count');
+    badge.textContent = incoming.length + outgoing.length;
+
+    const listEl = document.getElementById('pending-requests-list');
+    if (incoming.length === 0 && outgoing.length === 0) {
+      listEl.innerHTML = '<p class="text-muted-gg" style="font-size:.85rem;">No pending friend requests.</p>';
+      return;
+    }
+
+    let html = '';
+
+    incoming.forEach(req => {
+      const u = req.requester;
+      const initial = (u.displayName || '?').charAt(0).toUpperCase();
+      const ghTag = u.githubUsername ? `@${u.githubUsername}` : '';
+      html += `
+        <div class="user-card">
+          <div class="user-info">
+            <div class="user-avatar">${initial}</div>
+            <div>
+              <div class="user-name">${escapeHtml(u.displayName)}</div>
+              <div class="user-handle">${escapeHtml(ghTag)} <span class="badge-gg badge-neutral ms-1">Incoming</span></div>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn-gg-primary btn-sm" onclick="acceptRequest('${req.id}')">Accept</button>
+            <button class="btn-gg-outline btn-sm" onclick="rejectRequest('${req.id}')">Reject</button>
+          </div>
+        </div>
+      `;
+    });
+
+    outgoing.forEach(req => {
+      const u = req.addressee;
+      const initial = (u.displayName || '?').charAt(0).toUpperCase();
+      const ghTag = u.githubUsername ? `@${u.githubUsername}` : '';
+      html += `
+        <div class="user-card">
+          <div class="user-info">
+            <div class="user-avatar">${initial}</div>
+            <div>
+              <div class="user-name">${escapeHtml(u.displayName)}</div>
+              <div class="user-handle">${escapeHtml(ghTag)} <span class="badge-gg badge-neutral ms-1">Pending Sent</span></div>
+            </div>
+          </div>
+          <span class="text-tertiary-gg" style="font-size:.8rem;">Awaiting response</span>
+        </div>
+      `;
+    });
+
+    listEl.innerHTML = html;
+  }
+
+  // Load confirmed friends list
+  async function loadFriends() {
+    const res = await GGApi.get('/api/friends');
+    const friends = res.data;
+
+    const badge = document.getElementById('friends-badge-count');
+    badge.textContent = friends.length;
+
+    const listEl = document.getElementById('friends-list');
+    if (friends.length === 0) {
+      listEl.innerHTML = '<p class="text-muted-gg" style="font-size:.85rem;">You haven\'t added any friends yet.</p>';
+      return;
+    }
+
+    let html = '';
+    friends.forEach(f => {
+      const initial = (f.displayName || '?').charAt(0).toUpperCase();
+      const ghTag = f.githubUsername ? `@${f.githubUsername}` : '';
+      html += `
+        <div class="user-card">
+          <div class="user-info">
+            <div class="user-avatar">${initial}</div>
+            <div>
+              <div class="user-name">${escapeHtml(f.displayName)}</div>
+              <div class="user-handle">${escapeHtml(ghTag)}</div>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn-gg-primary btn-sm" onclick="viewProgress('${f.userId}')">View Progress</button>
+            <button class="btn-gg-danger btn-sm" onclick="removeFriend('${f.userId}', '${escapeHtml(f.displayName)}')">Remove</button>
+          </div>
+        </div>
+      `;
+    });
+
+    listEl.innerHTML = html;
+  }
+
+  // User Search
+  async function performSearch() {
+    const query = document.getElementById('user-search-input').value.trim();
+    if (!query) return;
+
+    GGShell.progress.show();
+    try {
+      const res = await GGApi.get(`/api/friends/search?q=${encodeURIComponent(query)}`);
+      const results = res.data;
+      const listEl = document.getElementById('search-results-list');
+
+      if (results.length === 0) {
+        listEl.innerHTML = '<p class="text-muted-gg" style="font-size:.85rem;">No matching users found.</p>';
+        return;
+      }
+
+      let html = '';
+      results.forEach(u => {
+        const initial = (u.displayName || '?').charAt(0).toUpperCase();
+        const ghTag = u.githubUsername ? `@${u.githubUsername}` : '';
+        let actionHtml = '';
+
+        if (u.relationshipStatus === 'FRIENDS') {
+          actionHtml = '<span class="badge-gg badge-status-committed">Friends</span>';
+        } else if (u.relationshipStatus === 'PENDING_SENT') {
+          actionHtml = '<span class="badge-gg badge-neutral">Request Sent</span>';
+        } else if (u.relationshipStatus === 'PENDING_RECEIVED') {
+          actionHtml = '<span class="badge-gg badge-neutral">Request Received</span>';
+        } else {
+          actionHtml = `<button class="btn-gg-primary btn-sm" onclick="sendRequest('${u.userId}')">Add Friend</button>`;
+        }
+
+        html += `
+          <div class="user-card">
+            <div class="user-info">
+              <div class="user-avatar">${initial}</div>
+              <div>
+                <div class="user-name">${escapeHtml(u.displayName)}</div>
+                <div class="user-handle">${escapeHtml(ghTag)}</div>
+              </div>
+            </div>
+            <div>${actionHtml}</div>
+          </div>
+        `;
+      });
+
+      listEl.innerHTML = html;
+    } catch (err) {
+      GGToast.error(err);
+    } finally {
+      GGShell.progress.done();
+    }
+  }
+
+  document.getElementById('user-search-btn').addEventListener('click', performSearch);
+  document.getElementById('user-search-input').addEventListener('keypress', e => {
+    if (e.key === 'Enter') performSearch();
+  });
+
+  // Action handlers
+  async function sendRequest(userId) {
+    try {
+      await GGApi.post('/api/friends/requests', { toUserId: userId });
+      GGToast.success('Friend request sent!');
+      performSearch();
+      loadPendingRequests();
+    } catch (err) {
+      GGToast.error(err);
+    }
+  }
+
+  async function acceptRequest(requestId) {
+    try {
+      await GGApi.post(`/api/friends/requests/${requestId}/accept`);
+      GGToast.success('Friend request accepted!');
+      loadData();
+    } catch (err) {
+      GGToast.error(err);
+    }
+  }
+
+  async function rejectRequest(requestId) {
+    try {
+      await GGApi.post(`/api/friends/requests/${requestId}/reject`);
+      GGToast.info('Friend request rejected');
+      loadPendingRequests();
+    } catch (err) {
+      GGToast.error(err);
+    }
+  }
+
+  async function removeFriend(userId, displayName) {
+    if (!confirm(`Are you sure you want to remove ${displayName} from your friends?`)) return;
+    try {
+      await GGApi.delete(`/api/friends/${userId}`);
+      GGToast.info('Friend removed');
+      loadFriends();
+    } catch (err) {
+      GGToast.error(err);
+    }
+  }
+
+  // View Aggregate Progress Modal
+  async function viewProgress(userId) {
+    GGShell.progress.show();
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+      const res = await GGApi.get(`/api/friends/${userId}/progress?timezone=${encodeURIComponent(tz)}`);
+      const p = res.data;
+
+      document.getElementById('modal-user-avatar').textContent = (p.displayName || '?').charAt(0).toUpperCase();
+      document.getElementById('modal-user-name').textContent = p.displayName;
+      document.getElementById('modal-user-handle').textContent = p.githubUsername ? `@${p.githubUsername}` : '';
+
+      document.getElementById('m-total-problems').textContent = p.totalProblems;
+      document.getElementById('m-mastery-pct').textContent = p.masteryPercentage + '%';
+      document.getElementById('m-streak').textContent = p.currentStreak + 'd 🔥';
+      document.getElementById('m-starred').textContent = p.starredCount;
+
+      document.getElementById('m-mastered-cnt').textContent = p.masteredCount;
+      document.getElementById('m-needs-rev-cnt').textContent = p.needsRevisionCount;
+      document.getElementById('m-not-set-cnt').textContent = p.notSetCount;
+
+      // Difficulty breakdown
+      const diffList = document.getElementById('m-difficulty-list');
+      const diffs = p.difficultyBreakdown || {};
+      diffList.innerHTML = `
+        <span class="badge-gg badge-diff-easy" style="font-size:.85rem;padding:.4rem .8rem;">Easy: ${diffs.EASY || 0}</span>
+        <span class="badge-gg badge-diff-medium" style="font-size:.85rem;padding:.4rem .8rem;">Medium: ${diffs.MEDIUM || 0}</span>
+        <span class="badge-gg badge-diff-hard" style="font-size:.85rem;padding:.4rem .8rem;">Hard: ${diffs.HARD || 0}</span>
+      `;
+
+      // Language breakdown
+      const langList = document.getElementById('m-language-list');
+      const langs = p.languageBreakdown || {};
+      const langKeys = Object.keys(langs);
+      if (langKeys.length === 0) {
+        langList.innerHTML = '<span class="text-tertiary-gg" style="font-size:.8rem;">No language data</span>';
+      } else {
+        langList.innerHTML = langKeys.map(k => `
+          <span class="badge-gg badge-neutral" style="font-size:.8rem;">${escapeHtml(k)}: ${langs[k]}</span>
+        `).join('');
+      }
+
+      openModal();
+    } catch (err) {
+      GGToast.error(err);
+    } finally {
+      GGShell.progress.done();
+    }
+  }
+
+  function openModal() {
+    document.getElementById('progress-modal-backdrop').classList.add('show');
+  }
+
+  function closeModal() {
+    document.getElementById('progress-modal-backdrop').classList.remove('show');
+  }
+
+  document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+  document.getElementById('progress-modal-backdrop').addEventListener('click', e => {
+    if (e.target === document.getElementById('progress-modal-backdrop')) closeModal();
+  });
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  loadData();
+</script>
+</body>
+</html>

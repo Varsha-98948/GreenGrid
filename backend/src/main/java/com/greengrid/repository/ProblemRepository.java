@@ -2,6 +2,7 @@ package com.greengrid.repository;
 
 import com.greengrid.entity.Difficulty;
 import com.greengrid.entity.Problem;
+import com.greengrid.entity.RevisionStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -40,7 +41,12 @@ public interface ProblemRepository extends JpaRepository<Problem, UUID>, JpaSpec
 
     long countByUserId(UUID userId);
 
+    long countByUserIdAndRevisionStatus(UUID userId, RevisionStatus revisionStatus);
+
+    long countByUserIdAndFavorite(UUID userId, boolean favorite);
+
     long countByUserIdAndSolvedDate(UUID userId, LocalDate solvedDate);
+
 
     @Query("select p.difficulty as difficulty, count(p) as total " +
             "from Problem p where p.user.id = :userId group by p.difficulty")
