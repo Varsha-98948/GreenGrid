@@ -255,9 +255,10 @@
     const outgoing = Array.isArray(res.data?.outgoing) ? res.data.outgoing : [];
 
     const badge = document.getElementById('pending-badge-count');
-    badge.textContent = incoming.length + outgoing.length;
+    if (badge) badge.textContent = incoming.length + outgoing.length;
 
     const listEl = document.getElementById('pending-requests-list');
+    if (!listEl) return;
     if (incoming.length === 0 && outgoing.length === 0) {
       listEl.innerHTML = '<p class="text-muted-gg" style="font-size:.85rem;">No pending friend requests.</p>';
       return;
@@ -314,9 +315,10 @@
     const friends = res.data;
 
     const badge = document.getElementById('friends-badge-count');
-    badge.textContent = friends.length;
+    if (badge) badge.textContent = friends.length;
 
     const listEl = document.getElementById('friends-list');
+    if (!listEl) return;
     if (friends.length === 0) {
       listEl.innerHTML = '<p class="text-muted-gg" style="font-size:.85rem;">You haven\'t added any friends yet.</p>';
       return;
@@ -348,7 +350,9 @@
 
   // User Search
   async function performSearch() {
-    const query = document.getElementById('user-search-input').value.trim();
+    const input = document.getElementById('user-search-input');
+    if (!input) return;
+    const query = input.value.trim();
     if (!query) return;
 
     GGShell.progress.show();
@@ -356,6 +360,7 @@
       const res = await GGApi.get(`/api/friends/search?q=${encodeURIComponent(query)}`);
       const results = res.data;
       const listEl = document.getElementById('search-results-list');
+      if (!listEl) return;
 
       if (results.length === 0) {
         listEl.innerHTML = '<p class="text-muted-gg" style="font-size:.85rem;">No matching users found.</p>';
