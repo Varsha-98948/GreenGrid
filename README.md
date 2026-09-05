@@ -1,91 +1,169 @@
 # 🧩 GreenGrid
 
-> **A developer growth dashboard that brings together coding journeys, problem-solving progress, and contributions in one place.**
+> **Tracking the little pieces of a developer's journey, all in one place.**
 
-GreenGrid is a platform built to help developers track, organize, and visualize their complete growth journey across different coding platforms and development activities.
+GreenGrid is a developer growth dashboard built to bring different parts of a coding journey together.
 
-A developer's progress is not limited to GitHub commits alone. Every solved problem, every project built, every challenge completed, and every contribution made represents a piece of their journey.
+Because progress isn't just a GitHub contribution graph.
 
-GreenGrid brings these pieces together into one unified dashboard.
+It's the problems you solve, the code you write, the revisions you make, the contributions you build up, and the small improvements that happen along the way.
+
+GreenGrid brings these pieces together so you can actually see your progress instead of having it scattered across different places.
 
 ---
 
-## ✨ Vision
+## ✨ What is GreenGrid?
 
-Modern developers learn and grow across multiple platforms:
+GreenGrid is a platform for tracking and visualizing your coding journey.
 
-* 🧠 Solving problems on coding platforms
-* 💻 Building personal and professional projects
-* 🚀 Contributing to open-source
-* 📚 Learning new technologies
-* 📈 Tracking personal growth
+It currently focuses on **problem solving, GitHub activity, and progress tracking**, with social features that let you connect with friends and view their progress too.
 
-However, this progress is scattered across different platforms.
+### What you can do with GreenGrid
 
-**GreenGrid aims to create a single place where developers can understand, track, and showcase their journey.**
+* 🧠 Add and organize coding problems
+* 🏷️ Categorize problems using tags
+* 📝 Create and manage problem revisions
+* 🔄 Save changes as new revisions
+* 💾 Commit problem changes to GitHub
+* 📊 Track coding progress
+* 📅 View contribution activity through a calendar
+* 👥 Add friends and view their progress
+* 🔐 Sign in using GitHub
+* 🐙 Connect your GitHub identity with your GreenGrid profile
 
 ---
 
 # 🚀 Features
 
-## 🔐 Secure Authentication
+## 🔐 GitHub Authentication
 
-* GitHub OAuth 2.0 authentication
-* JWT-based session management
-* Secure user identification through GitHub profiles
+GreenGrid uses GitHub for authentication, making it easy to connect your developer identity with your account.
 
-## 📊 Developer Dashboard
+* GitHub OAuth 2.0
+* JWT-based authentication
+* Secure session handling
+* GitHub profile integration
 
-* Centralized view of developer activity
-* Track coding progress and achievements
-* Visual representation of growth over time
+---
 
-## 🧩 Unified Progress Tracking
+## 🧠 Problem Tracking
 
-Bring together different parts of development:
+GreenGrid helps keep coding problems organized instead of letting them disappear into the endless pile of problems you've solved.
 
-* Coding problems solved
-* Projects completed
-* Contributions made
-* Learning milestones
+You can:
 
-## 🌐 Platform Integration
+* Add coding problems
+* Edit problems
+* Set difficulty
+* Add tags
+* Track problem details
+* Organize your problem-solving progress
 
-Designed to connect developer activity from multiple sources:
+---
 
-* GitHub
-* Coding platforms
-* Developer tools
+## 📝 Problem Revisions
 
-*(More integrations coming soon)*
+Problems can change over time, so GreenGrid keeps track of those changes through revisions.
+
+You can:
+
+* Edit an existing revision
+* Save changes as a new revision
+* Keep previous revisions
+* Manage different versions of a problem
+* Commit revision changes to GitHub
+
+This makes the problem editor more than just a form that overwrites whatever was there before.
+
+---
+
+## 🐙 GitHub Integration
+
+GitHub is a core part of GreenGrid.
+
+The platform uses GitHub to connect your developer identity and coding activity with your GreenGrid profile.
+
+GitHub integration includes:
+
+* GitHub OAuth login
+* GitHub profile information
+* Contribution activity
+* Repository-related integration
+* Committing changes from GreenGrid to GitHub
+
+---
+
+## 📊 Progress Tracking
+
+GreenGrid gives you a place to look at your coding activity as a whole.
+
+Instead of focusing on a single metric, the dashboard brings together different parts of your progress.
+
+You can keep track of:
+
+* Problems solved
+* Coding activity
+* GitHub contributions
+* Progress over time
+
+The idea isn't to turn your entire developer journey into one magical number.
+
+It's to make the different pieces visible.
+
+---
+
+## 👥 Friends & Progress
+
+GreenGrid also lets you see how the people around you are progressing.
+
+You can:
+
+* Send friend requests
+* Accept friend requests
+* View your friends
+* View a friend's progress
+* See their contribution activity
+
+Because sometimes checking what your friends are building is enough motivation to get back to your own code.
+
+---
+
+## 📅 Contribution Calendar
+
+GreenGrid includes a contribution calendar to visualize coding activity over time.
+
+It gives you a quick way to see when you've been active and how your contribution patterns change over time.
 
 ---
 
 # 🏗️ System Architecture
 
+At a high level, GreenGrid follows a frontend-backend architecture where the frontend communicates with the Spring Boot backend through REST APIs.
+
+```text
+                         User
+                           │
+                           ▼
+                  GreenGrid Frontend
+                    HTML / CSS / JS
+                           │
+                           │
+                       REST APIs
+                           │
+                           ▼
+                  Spring Boot Backend
+                     Java + Maven
+                           │
+              ┌────────────┼────────────┐
+              │            │            │
+              ▼            ▼            ▼
+          Supabase      GitHub APIs   Application
+          Database                     Services
 ```
-                    User
 
-                     |
-                     ↓
+The frontend handles the interface and user interactions, while the backend handles authentication, business logic, data access, GitHub integration, and API communication.
 
-          GitHub Pages Frontend
-              HTML / CSS / JS
-
-                     |
-                     |
-                REST APIs
-
-                     ↓
-
-             Spring Boot Backend
-                 Java + Maven
-
-                     |
-                     ↓
-
-              Data & Services
-```
+Supabase is used for the application's database layer.
 
 ---
 
@@ -96,9 +174,9 @@ Designed to connect developer activity from multiple sources:
 | Technology   | Purpose                              |
 | ------------ | ------------------------------------ |
 | HTML5        | Application structure                |
-| CSS3         | Styling and UI design                |
+| CSS3         | Styling and UI                       |
 | JavaScript   | Frontend logic and API communication |
-| GitHub Pages | Frontend deployment                  |
+| GitHub Pages | Frontend hosting                     |
 
 ---
 
@@ -114,65 +192,68 @@ Designed to connect developer activity from multiple sources:
 
 ---
 
+## Database & Backend Services
+
+| Technology | Purpose                             |
+| ---------- | ----------------------------------- |
+| Supabase   | Database and backend infrastructure |
+| PostgreSQL | Application database                |
+| Flyway     | Database migrations                 |
+
+---
+
+## APIs & Integrations
+
+| Technology   | Purpose                                                 |
+| ------------ | ------------------------------------------------------- |
+| GitHub API   | GitHub profile, repository and contribution integration |
+| GitHub OAuth | Authentication                                          |
+| REST APIs    | Frontend-backend communication                          |
+
+---
+
 ## Deployment
 
-| Technology     | Purpose                   |
-| -------------- | ------------------------- |
-| GitHub         | Version control           |
-| GitHub Actions | CI/CD deployment workflow |
-| GitHub Pages   | Frontend hosting          |
-| Render         | Backend cloud hosting     |
+| Technology     | Purpose          |
+| -------------- | ---------------- |
+| GitHub         | Version control  |
+| GitHub Actions | CI/CD            |
+| GitHub Pages   | Frontend hosting |
+| Render         | Backend hosting  |
+| Supabase       | Database hosting |
 
 ---
 
 # 🔄 Authentication Flow
 
-```
+```text
 User
- |
- ↓
+ │
+ ▼
 GreenGrid Frontend
- |
- ↓
+ │
+ ▼
 GitHub OAuth Login
- |
- ↓
+ │
+ ▼
 GitHub Authorization
- |
- ↓
+ │
+ ▼
 Spring Boot Callback API
- |
- ↓
-Generate JWT Tokens
- |
- ↓
-Authenticated Dashboard
+ │
+ ▼
+JWT Authentication
+ │
+ ▼
+Authenticated GreenGrid Session
+ │
+ ▼
+GreenGrid Dashboard
 ```
 
 ---
 
-# 📂 Project Structure
 
-```
-GreenGrid
-
-├── frontend
-│   ├── html pages
-│   ├── css
-│   ├── javascript
-│   └── assets
-│
-├── backend
-│   ├── controllers
-│   ├── services
-│   ├── security
-│   ├── models
-│   └── configuration
-│
-└── README.md
-```
-
----
 
 # 🌐 Live Deployment
 
@@ -186,26 +267,7 @@ GreenGrid
 
 ---
 
-# 🤝 Contribution
+# 🤝 Contributors
 
-GreenGrid is built around the idea that every contribution matters.
-
-Whether it is solving a problem, fixing a bug, improving documentation, or adding a feature — every improvement becomes another piece of the bigger picture.
-
----
-
-# 👩‍💻 Author
-
-**Varsha Jairam**
-
-## ⭐ Why GreenGrid?
-
-A developer's journey cannot be measured by a single number.
-
-It is built from thousands of small achievements.
-
-**Every problem solved.
-Every project built.
-Every contribution made.**
-
-🧩 Every piece matters.
+- **[Varsha Jairam](https://github.com/Varsha-98948)** · Creator & Developer
+- **[Atharva Deshmukh](https://github.com/DeadShotKira)** · Contributor · Proposed and implemented the **Friends & Progress** feature
