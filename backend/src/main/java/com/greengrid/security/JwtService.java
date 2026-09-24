@@ -88,6 +88,10 @@ public class JwtService {
      * A null userId means "this is a sign-in-with-GitHub attempt", not a connect.
      */
     public String generateOAuthStateToken(UUID actingUserId) {
+        return generateOAuthStateToken(actingUserId, null);
+    }
+
+    public String generateOAuthStateToken(UUID actingUserId, String redirectUri) {
         Instant now = Instant.now();
         var builder = Jwts.builder()
                 .claim(CLAIM_TYPE, TYPE_OAUTH_STATE)
@@ -95,6 +99,9 @@ public class JwtService {
                 .expiration(Date.from(now.plus(10, ChronoUnit.MINUTES)));
         if (actingUserId != null) {
             builder.subject(actingUserId.toString());
+        }
+        if (redirectUri != null && !redirectUri.isBlank()) {
+            builder.claim("redirect_uri", redirectUri.trim());
         }
         return builder.signWith(key).compact();
     }
@@ -106,6 +113,12 @@ public class JwtService {
         }
         String subject = claims.getSubject();
         return subject == null ? java.util.Optional.empty() : java.util.Optional.of(UUID.fromString(subject));
+    }
+
+    public java.util.Optional<String> getOAuthRedirectUri(String state) {
+        Claims claims = parseClaims(state);
+        String redirect = claims.get("redirect_uri", String.class);
+        return (redirect == null || redirect.isBlank()) ? java.util.Optional.empty() : java.util.Optional.of(redirect);
     }
 
     private Claims parseClaims(String token) {

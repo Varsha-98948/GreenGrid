@@ -1,4 +1,4 @@
-import { g as getAuthState, b as getApiBaseUrl, d as setApiBaseUrl, c as clearAuthState, a as login } from './greengrid-api-SifbpE2_.js';
+import { g as getAuthState, b as getApiBaseUrl, d as setApiBaseUrl, c as clearAuthState, a as login, e as loginWithGitHub } from './greengrid-api-BoxarH-a.js';
 
 true&&(function polyfill() {
   const relList = document.createElement("link").relList;
@@ -493,6 +493,7 @@ const Popup = () => {
   const [email, setEmail] = reactExports.useState("");
   const [password, setPassword] = reactExports.useState("");
   const [loginLoading, setLoginLoading] = reactExports.useState(false);
+  const [githubLoading, setGithubLoading] = reactExports.useState(false);
   const [errorMessage, setErrorMessage] = reactExports.useState("");
   reactExports.useEffect(() => {
     async function loadInitialData() {
@@ -528,6 +529,23 @@ const Popup = () => {
       setErrorMessage("Unable to connect to GreenGrid.");
     } finally {
       setLoginLoading(false);
+    }
+  };
+  const handleGitHubLogin = async () => {
+    setGithubLoading(true);
+    setErrorMessage("");
+    try {
+      const res = await loginWithGitHub();
+      if (res.success) {
+        const state = await getAuthState();
+        setAuthState(state);
+      } else {
+        setErrorMessage(res.error || "GitHub login failed. Please try again.");
+      }
+    } catch {
+      setErrorMessage("GitHub login failed. Please try again.");
+    } finally {
+      setGithubLoading(false);
     }
   };
   const handleLogout = async () => {
@@ -637,8 +655,39 @@ const Popup = () => {
               }
             )
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "submit", disabled: loginLoading, style: styles.primaryBtn, children: loginLoading ? "Connecting..." : "Connect to GreenGrid" })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "submit", disabled: loginLoading || githubLoading, style: styles.primaryBtn, children: loginLoading ? "Connecting..." : "Connect to GreenGrid" })
         ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles.divider, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles.dividerLine }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles.dividerText, children: "or" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles.dividerLine })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: handleGitHubLogin,
+            disabled: githubLoading || loginLoading,
+            style: {
+              ...styles.githubBtn,
+              ...githubLoading || loginLoading ? styles.githubBtnDisabled : {}
+            },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "svg",
+                {
+                  width: "16",
+                  height: "16",
+                  viewBox: "0 0 24 24",
+                  fill: "currentColor",
+                  "aria-hidden": "true",
+                  style: { flexShrink: 0 },
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" })
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: githubLoading ? "Connecting to GitHub..." : "Continue with GitHub" })
+            ]
+          }
+        ),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles.footerLink, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
           "a",
           {
@@ -874,6 +923,43 @@ const styles = {
     fontSize: "11px",
     color: "#10b981",
     textDecoration: "none"
+  },
+  divider: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px"
+  },
+  dividerLine: {
+    flex: 1,
+    height: "1px",
+    backgroundColor: "rgba(255, 255, 255, 0.08)"
+  },
+  dividerText: {
+    fontSize: "11px",
+    color: "#475569",
+    whiteSpace: "nowrap",
+    textTransform: "uppercase",
+    letterSpacing: "0.08em"
+  },
+  githubBtn: {
+    width: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    color: "#e2e8f0",
+    border: "1px solid rgba(255, 255, 255, 0.12)",
+    borderRadius: "8px",
+    padding: "9px 14px",
+    fontSize: "13px",
+    fontWeight: "500",
+    cursor: "pointer",
+    transition: "background-color 0.15s ease, border-color 0.15s ease"
+  },
+  githubBtnDisabled: {
+    opacity: 0.55,
+    cursor: "not-allowed"
   }
 };
 

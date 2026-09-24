@@ -162,3 +162,98 @@ export async function refreshAccessToken(): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Sign in using GitHub OAuth via chrome.identity.launchWebAuthFlow.
+ * Reuses the existing GreenGrid backend GitHub OAuth infrastructure:
+ *   - Requests authorize URL from GET /api/auth/github/login-url?redirect={redirectUri}
+ *   - Launches Chrome's interactive web auth flow
+ *   - Receives redirection from GreenGrid backend carrying JWT accessToken and refreshToken in hash
+ *   - Stores session in chrome.storage.local using setAuthState
+ */
+export async function loginWithGitHub(): Promise<{ success: boolean; error?: string }> {
+  try {
+    const baseUrl = await getApiBaseUrl();
+    const redirectUri = chrome.identity.getRedirectURL();
+
+    logger.info('Initiating GitHub OAuth flow with redirect URI:', redirectUri);
+
+    const loginUrlResponse = await fetch(
+      `${baseUrl}/api/auth/github/login-url?redirect=${encodeURIComponent(redirectUri)}`,
+      { method: 'GET' }
+    );
+
+    if (!loginUrlResponse.ok) {
+      const body = await loginUrlResponse.json().catch(() => null);
+      return {
+        success: false,
+        error: body?.message || 'Failed to initialize GitHub sign-in.',
+      };
+    }
+
+    const resJson = await loginUrlResponse.json();
+    const authorizeUrl = resJson.data?.authorizeUrl;
+    if (!authorizeUrl) {
+      return { success: false, error: 'Invalid OAuth URL returned from GreenGrid.' };
+    }
+
+    const callbackUrl = await new Promise<string>((resolve, reject) => {
+      chrome.identity.launchWebAuthFlow(
+        {
+          url: authorizeUrl,
+          interactive: true,
+        },
+        (responseUrl) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else if (!responseUrl) {
+            reject(new Error('No response URL received from GitHub.'));
+          } else {
+            resolve(responseUrl);
+          }
+        }
+      );
+    });
+
+    const parsedUrl = new URL(callbackUrl);
+    const hash = parsedUrl.hash.startsWith('#') ? parsedUrl.hash.substring(1) : parsedUrl.hash;
+    const params = new URLSearchParams(hash);
+
+    const accessToken = params.get('accessToken');
+    const refreshToken = params.get('refreshToken');
+
+    if (!accessToken || !refreshToken) {
+      return { success: false, error: 'GitHub login failed. Please try again.' };
+    }
+
+    let userId = '';
+    let email = '';
+    let displayName = 'Developer';
+
+    try {
+      const payloadBase64 = accessToken.split('.')[1];
+      const decoded = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
+      userId = decoded.sub || '';
+      email = decoded.email || '';
+      displayName = email ? email.split('@')[0] : 'Developer';
+    } catch (err) {
+      logger.warn('Failed to parse token payload for user details', err);
+    }
+
+    await setAuthState(accessToken, refreshToken, {
+      userId,
+      email,
+      displayName,
+    });
+
+    logger.info('GitHub login succeeded for', email);
+    return { success: true };
+  } catch (e: unknown) {
+    const err = e as Error;
+    logger.error('GitHub login failed:', err);
+    if (err.message && err.message.toLowerCase().includes('user') && err.message.toLowerCase().includes('cancel')) {
+      return { success: false, error: 'GitHub login was cancelled.' };
+    }
+    return { success: false, error: 'GitHub login failed. Please try again.' };
+  }
+}

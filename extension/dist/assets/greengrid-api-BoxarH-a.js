@@ -112,6 +112,80 @@ async function refreshAccessToken() {
     return false;
   }
 }
+async function loginWithGitHub() {
+  try {
+    const baseUrl = await getApiBaseUrl();
+    const redirectUri = chrome.identity.getRedirectURL();
+    logger.info("Initiating GitHub OAuth flow with redirect URI:", redirectUri);
+    const loginUrlResponse = await fetch(
+      `${baseUrl}/api/auth/github/login-url?redirect=${encodeURIComponent(redirectUri)}`,
+      { method: "GET" }
+    );
+    if (!loginUrlResponse.ok) {
+      const body = await loginUrlResponse.json().catch(() => null);
+      return {
+        success: false,
+        error: body?.message || "Failed to initialize GitHub sign-in."
+      };
+    }
+    const resJson = await loginUrlResponse.json();
+    const authorizeUrl = resJson.data?.authorizeUrl;
+    if (!authorizeUrl) {
+      return { success: false, error: "Invalid OAuth URL returned from GreenGrid." };
+    }
+    const callbackUrl = await new Promise((resolve, reject) => {
+      chrome.identity.launchWebAuthFlow(
+        {
+          url: authorizeUrl,
+          interactive: true
+        },
+        (responseUrl) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else if (!responseUrl) {
+            reject(new Error("No response URL received from GitHub."));
+          } else {
+            resolve(responseUrl);
+          }
+        }
+      );
+    });
+    const parsedUrl = new URL(callbackUrl);
+    const hash = parsedUrl.hash.startsWith("#") ? parsedUrl.hash.substring(1) : parsedUrl.hash;
+    const params = new URLSearchParams(hash);
+    const accessToken = params.get("accessToken");
+    const refreshToken = params.get("refreshToken");
+    if (!accessToken || !refreshToken) {
+      return { success: false, error: "GitHub login failed. Please try again." };
+    }
+    let userId = "";
+    let email = "";
+    let displayName = "Developer";
+    try {
+      const payloadBase64 = accessToken.split(".")[1];
+      const decoded = JSON.parse(atob(payloadBase64.replace(/-/g, "+").replace(/_/g, "/")));
+      userId = decoded.sub || "";
+      email = decoded.email || "";
+      displayName = email ? email.split("@")[0] : "Developer";
+    } catch (err) {
+      logger.warn("Failed to parse token payload for user details", err);
+    }
+    await setAuthState(accessToken, refreshToken, {
+      userId,
+      email,
+      displayName
+    });
+    logger.info("GitHub login succeeded for", email);
+    return { success: true };
+  } catch (e) {
+    const err = e;
+    logger.error("GitHub login failed:", err);
+    if (err.message && err.message.toLowerCase().includes("user") && err.message.toLowerCase().includes("cancel")) {
+      return { success: false, error: "GitHub login was cancelled." };
+    }
+    return { success: false, error: "GitHub login failed. Please try again." };
+  }
+}
 
 const API_BASE_URL_KEY = "gg_api_base_url";
 const DEFAULT_PROD_URL = "https://greengrid-byh0.onrender.com";
@@ -324,4 +398,4 @@ async function saveSolution(solution) {
   }
 }
 
-export { login as a, getApiBaseUrl as b, clearAuthState as c, setApiBaseUrl as d, getAuthState as g, logger as l, saveSolution as s };
+export { login as a, getApiBaseUrl as b, clearAuthState as c, setApiBaseUrl as d, loginWithGitHub as e, getAuthState as g, logger as l, saveSolution as s };

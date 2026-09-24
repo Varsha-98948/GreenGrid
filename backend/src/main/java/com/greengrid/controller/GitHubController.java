@@ -47,8 +47,8 @@ public class GitHubController {
     // --- OAuth: "Sign in with GitHub" with no existing session ---
 
     @GetMapping("/api/auth/github/login-url")
-    public ApiResponse<AuthorizeUrlResponse> getLoginUrl() {
-        String state = jwtService.generateOAuthStateToken(null);
+    public ApiResponse<AuthorizeUrlResponse> getLoginUrl(@RequestParam(required = false) String redirect) {
+        String state = jwtService.generateOAuthStateToken(null, redirect);
         return ApiResponse.ok(new AuthorizeUrlResponse(gitHubAccountService.buildAuthorizeUrl(state)));
     }
 
@@ -76,9 +76,22 @@ public class GitHubController {
             var user = gitHubAccountService.loginOrRegisterWithGitHub(code);
             String access = jwtService.generateAccessToken(user.getId(), user.getEmail());
             String refresh = jwtService.generateRefreshToken(user.getId(), user.getEmail());
-            response.sendRedirect(frontendUrl + "/auth-callback.html#accessToken=" + access
+
+            String targetUrl = jwtService.getOAuthRedirectUri(state)
+                    .filter(this::isAllowedRedirectUri)
+                    .orElse(frontendUrl + "/auth-callback.html");
+
+            response.sendRedirect(targetUrl + "#accessToken=" + access
                     + "&refreshToken=" + refresh + "&onboardingCompleted=" + user.isOnboardingCompleted());
         }
+    }
+
+    private boolean isAllowedRedirectUri(String uri) {
+        if (uri == null || uri.isBlank()) return false;
+        return (uri.startsWith("https://") && uri.contains(".chromiumapp.org"))
+                || uri.startsWith("chrome-extension://")
+                || (frontendUrl != null && uri.startsWith(frontendUrl))
+                || uri.startsWith("http://localhost");
     }
 
     // --- Connection status ---

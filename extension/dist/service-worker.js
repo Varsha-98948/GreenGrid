@@ -1,4 +1,4 @@
-import { l as logger, c as clearAuthState, a as login, g as getAuthState, s as saveSolution } from './assets/greengrid-api-SifbpE2_.js';
+import { l as logger, c as clearAuthState, a as login, g as getAuthState, s as saveSolution } from './assets/greengrid-api-BoxarH-a.js';
 
 chrome.runtime.onInstalled.addListener((details) => {
   logger.info("GreenGrid extension installed/updated", details.reason);
