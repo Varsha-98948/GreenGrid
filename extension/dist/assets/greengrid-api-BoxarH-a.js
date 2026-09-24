@@ -258,6 +258,9 @@ function normalizeLanguage(lang) {
 }
 async function saveSolution(solution) {
   const normalizedLang = normalizeLanguage(solution.language);
+  const cleanCode = solution.code ? solution.code.replace(/\u00A0/g, " ").replace(/[\u200B\uFEFF]/g, "") : "";
+  let cleanTitle = solution.problemName ? solution.problemName.replace(/\u00A0/g, " ").replace(/^\s*\d+\.\s*/, "").replace(/\s+\d+$/, "").trim() : "";
+
   try {
     let difficulty = "MEDIUM";
     let topics = [];
@@ -271,6 +274,9 @@ async function saveSolution(solution) {
         if (metaBody.data?.found) {
           difficulty = metaBody.data.difficulty || difficulty;
           topics = metaBody.data.topics || [];
+          if (metaBody.data.title && metaBody.data.title.trim().length > 0) {
+            cleanTitle = metaBody.data.title.replace(/\u00A0/g, " ").replace(/^\s*\d+\.\s*/, "").replace(/\s+\d+$/, "").trim();
+          }
         }
       }
     } catch (e) {
@@ -278,21 +284,21 @@ async function saveSolution(solution) {
     }
     const createPayload = {
       platform: "LeetCode",
-      title: solution.problemName,
+      title: cleanTitle,
       problemUrl: solution.problemUrl,
       difficulty,
       topics,
       language: normalizedLang,
-      code: solution.code,
+      code: cleanCode,
       notes: null,
       timeComplexity: null,
       spaceComplexity: null,
       solvedDate: (/* @__PURE__ */ new Date()).toISOString().split("T")[0]
     };
     logger.info("Sending solution to backend", {
-      title: solution.problemName,
+      title: cleanTitle,
       language: normalizedLang,
-      codeLength: solution.code.length
+      codeLength: cleanCode.length
     });
     const response = await apiRequest("/api/problems", {
       method: "POST",
@@ -317,7 +323,7 @@ async function saveSolution(solution) {
         logger.info("Problem already exists, creating new revision", { existingId });
         const revisionPayload = {
           language: normalizedLang,
-          code: solution.code,
+          code: cleanCode,
           notes: null,
           timeComplexity: null,
           spaceComplexity: null

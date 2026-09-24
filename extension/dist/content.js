@@ -593,7 +593,41 @@
 	      codeLength: code.length,
 	      submissionId
 	    });
+	    this.lastAcceptedSolution = solution;
 	    onAccepted(solution);
+	  }
+	  /**
+	   * Extract current accepted solution if available on the page or from memory.
+	   * Used by the 'Add to GitHub' button.
+	   */
+	  extractCurrentAcceptedSolution() {
+	    const slug = this.extractProblemSlug();
+	    if (!slug) return null;
+	    if (this.lastAcceptedSolution && this.lastAcceptedSolution.problemSlug === slug) {
+	      return this.lastAcceptedSolution;
+	    }
+	    const acceptedElement = this.findAcceptedElement();
+	    if (!acceptedElement) {
+	      return null;
+	    }
+	    const code = this.extractCode();
+	    if (!code || code.trim().length === 0) {
+	      return null;
+	    }
+	    const language = this.extractLanguage();
+	    const problemName = this.extractProblemName(slug);
+	    const problemUrl = `https://leetcode.com/problems/${slug}/`;
+	    const solution = {
+	      platform: "LeetCode",
+	      problemName,
+	      problemUrl,
+	      problemSlug: slug,
+	      language,
+	      code,
+	      status: "accepted"
+	    };
+	    this.lastAcceptedSolution = solution;
+	    return solution;
 	  }
 	  /**
 	   * Extract problem slug from URL
@@ -609,16 +643,22 @@
 	    const titleElem = document.querySelector(
 	      'div[data-cy="question-title"], .text-title-large, [class*="question-title"], a[href^="/problems/"][class*="title"]'
 	    );
-	    if (titleElem && titleElem.textContent) {
-	      const text = titleElem.textContent.trim();
-	      if (text.length > 0) return text;
-	    }
-	    const docTitle = document.title;
-	    if (docTitle && docTitle.includes("LeetCode")) {
-	      const clean = docTitle.replace(/-?\s*LeetCode.*$/i, "").trim();
+	    if (titleElem) {
+	      const link = titleElem.matches('a') ? titleElem : titleElem.querySelector('a[href*="/problems/"]');
+	      const rawText = link?.textContent || titleElem.textContent || '';
+	      const clean = cleanProblemTitle(rawText);
 	      if (clean.length > 0) return clean;
 	    }
+	    const docTitle = document.title;
+	    if (docTitle) {
+	      const titleWithoutSite = docTitle.replace(/-?\s*LeetCode.*$/i, "").trim();
+	      const clean = cleanProblemTitle(titleWithoutSite);
+	      if (clean.length > 0 && clean.toLowerCase() !== "leetcode") return clean;
+	    }
 	    return slug.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+	  }
+	  cleanProblemTitle(rawTitle) {
+	    return cleanProblemTitle(rawTitle);
 	  }
 	  /**
 	   * Find DOM element containing the 'Accepted' verdict in the submission result
@@ -743,39 +783,66 @@
 	   * Extract actual submitted code
 	   */
 	  extractCode() {
+	    let rawCode = "";
 	    const submissionCodeBlock = document.querySelector(
 	      'div[class*="submission-detail"] pre code, div[class*="submission"] pre, pre[class*="code"]'
 	    );
 	    if (submissionCodeBlock && submissionCodeBlock.textContent) {
-	      const code = submissionCodeBlock.textContent.trim();
-	      if (code.length > 0) {
-	        logger.debug("Extracted code from submission pre/code element");
-	        return code;
-	      }
-	    }
-	    const monacoLines = document.querySelectorAll(".monaco-editor .view-lines .view-line");
-	    if (monacoLines.length > 0) {
-	      const lines = [];
-	      monacoLines.forEach((line) => {
-	        const text = line.innerText ?? line.textContent ?? "";
-	        lines.push(text);
-	      });
-	      const code = lines.join("\n");
+	      const code = submissionCodeBlock.textContent;
 	      if (code.trim().length > 0) {
-	        logger.debug("Extracted code from Monaco editor .view-lines", { lineCount: lines.length });
-	        return code;
+	        logger.debug("Extracted code from submission pre/code element");
+	        rawCode = code;
 	      }
 	    }
-	    const monacoEditor = document.querySelector(".monaco-editor");
-	    if (monacoEditor) {
-	      const text = monacoEditor.innerText;
-	      if (text && text.trim().length > 0) {
-	        logger.debug("Extracted code from Monaco editor innerText");
-	        return text;
+	    if (!rawCode) {
+	      const monacoLines = document.querySelectorAll(".monaco-editor .view-lines .view-line");
+	      if (monacoLines.length > 0) {
+	        const lines = [];
+	        monacoLines.forEach((line) => {
+	          const text = line.innerText ?? line.textContent ?? "";
+	          lines.push(text);
+	        });
+	        const code = lines.join("\n");
+	        if (code.trim().length > 0) {
+	          logger.debug("Extracted code from Monaco editor .view-lines", { lineCount: lines.length });
+	          rawCode = code;
+	        }
 	      }
 	    }
-	    return "";
+	    if (!rawCode) {
+	      const monacoEditor = document.querySelector(".monaco-editor");
+	      if (monacoEditor) {
+	        const text = monacoEditor.innerText;
+	        if (text && text.trim().length > 0) {
+	          logger.debug("Extracted code from Monaco editor innerText");
+	          rawCode = text;
+	        }
+	      }
+	    }
+	    if (!rawCode || rawCode.trim().length === 0) {
+	      return "";
+	    }
+	    return normalizeCode(rawCode);
 	  }
+	  normalizeCode(code) {
+	    return normalizeCode(code);
+	  }
+	}
+
+	function cleanProblemTitle(rawTitle) {
+	  if (!rawTitle) return "";
+	  return rawTitle
+	    .replace(/\u00A0/g, " ")
+	    .replace(/^\s*\d+\.\s*/, "")
+	    .replace(/\s+\d+$/, "")
+	    .trim();
+	}
+
+	function normalizeCode(rawCode) {
+	  if (!rawCode) return "";
+	  return rawCode
+	    .replace(/\u00A0/g, " ")
+	    .replace(/[\u200B\uFEFF]/g, "");
 	}
 
 	var jsxRuntime = {exports: {}};
@@ -1227,11 +1294,262 @@
 	    })
 	  );
 	}
+	const BTN_WRAPPER_ID = "greengrid-btn-wrapper";
+	const BTN_ID = "greengrid-add-github-btn";
+	const POPOVER_ID = "greengrid-popover";
+	const STYLE_ID = "greengrid-injected-styles";
+
+	function ensureStyles() {
+	  if (document.getElementById(STYLE_ID)) return;
+	  const style = document.createElement("style");
+	  style.id = STYLE_ID;
+	  style.textContent = `
+    .greengrid-btn-wrapper {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      margin-right: 8px;
+      vertical-align: middle;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .greengrid-github-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background-color: #10b981;
+      background-image: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      line-height: 1.4;
+      user-select: none;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+    .greengrid-github-btn:hover:not(:disabled) {
+      background-image: linear-gradient(135deg, #059669 0%, #047857 100%);
+      box-shadow: 0 2px 5px rgba(16, 185, 129, 0.35);
+      transform: translateY(-1px);
+    }
+    .greengrid-github-btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+    .greengrid-github-btn:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .greengrid-github-btn.greengrid-status-success {
+      background-image: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+      border-color: #10b981 !important;
+    }
+    .greengrid-github-btn.greengrid-status-error {
+      background-image: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+      border-color: #ef4444 !important;
+    }
+    .greengrid-github-btn.greengrid-status-warn {
+      background-image: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+      border-color: #f59e0b !important;
+    }
+    .greengrid-popover {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e293b;
+      color: #f8fafc;
+      padding: 7px 11px;
+      border-radius: 6px;
+      font-size: 12px;
+      line-height: 1.4;
+      white-space: nowrap;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      z-index: 999999;
+      pointer-events: none;
+    }
+    .greengrid-popover::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      margin-left: -5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: #1e293b transparent transparent transparent;
+    }
+  `;
+	  document.head.appendChild(style);
+	}
+
+	function createGitHubButton(adapter) {
+	  const wrapper = document.createElement("div");
+	  wrapper.id = BTN_WRAPPER_ID;
+	  wrapper.className = "greengrid-btn-wrapper";
+
+	  const btn = document.createElement("button");
+	  btn.id = BTN_ID;
+	  btn.type = "button";
+	  btn.className = "greengrid-github-btn";
+	  btn.innerHTML = `
+    <span class="greengrid-btn-icon">＋</span>
+    <span class="greengrid-btn-text">Add to GitHub</span>
+  `;
+
+	  const popover = document.createElement("div");
+	  popover.id = POPOVER_ID;
+	  popover.className = "greengrid-popover";
+	  popover.style.display = "none";
+
+	  wrapper.appendChild(btn);
+	  wrapper.appendChild(popover);
+
+	  let popoverTimer = null;
+	  const showPopover = (msg, duration = 4000) => {
+	    popover.textContent = msg;
+	    popover.style.display = "block";
+	    if (popoverTimer) window.clearTimeout(popoverTimer);
+	    popoverTimer = window.setTimeout(() => {
+	      popover.style.display = "none";
+	    }, duration);
+	  };
+
+	  btn.addEventListener("click", (e) => {
+	    e.preventDefault();
+	    e.stopPropagation();
+
+	    chrome.runtime.sendMessage({ type: "GET_AUTH_STATUS" }, (authStatus) => {
+	      if (chrome.runtime.lastError || !authStatus?.isAuthenticated) {
+	        showPopover("Please sign in to GreenGrid via the extension icon first.");
+	        return;
+	      }
+
+	      const solution = adapter.extractCurrentAcceptedSolution();
+	      if (!solution || !solution.code || solution.code.trim().length === 0) {
+	        btn.classList.add("greengrid-status-warn");
+	        btn.innerHTML = `
+          <span class="greengrid-btn-icon">ℹ</span>
+          <span class="greengrid-btn-text">No accepted solution</span>
+        `;
+	        showPopover("No accepted solution found. Please submit your solution and ensure it passes first.");
+	        setTimeout(() => {
+	          btn.classList.remove("greengrid-status-warn");
+	          btn.innerHTML = `
+            <span class="greengrid-btn-icon">＋</span>
+            <span class="greengrid-btn-text">Add to GitHub</span>
+          `;
+	        }, 3500);
+	        return;
+	      }
+
+	      btn.disabled = true;
+	      btn.innerHTML = `
+        <span class="greengrid-btn-icon">⏳</span>
+        <span class="greengrid-btn-text">Adding...</span>
+      `;
+
+	      chrome.runtime.sendMessage({ type: "SAVE_SOLUTION", payload: solution }, (result) => {
+	        if (chrome.runtime.lastError || !result?.success) {
+	          btn.classList.add("greengrid-status-error");
+	          btn.innerHTML = `
+            <span class="greengrid-btn-icon">⚠</span>
+            <span class="greengrid-btn-text">Failed</span>
+          `;
+	          showPopover(result?.error || chrome.runtime.lastError?.message || "Failed to commit to GitHub.");
+	          setTimeout(() => {
+	            btn.disabled = false;
+	            btn.classList.remove("greengrid-status-error");
+	            btn.innerHTML = `
+              <span class="greengrid-btn-icon">＋</span>
+              <span class="greengrid-btn-text">Add to GitHub</span>
+            `;
+	          }, 3500);
+	          return;
+	        }
+
+	        btn.classList.add("greengrid-status-success");
+	        btn.innerHTML = `
+          <span class="greengrid-btn-icon">✓</span>
+          <span class="greengrid-btn-text">Added to GitHub</span>
+        `;
+	        showPopover(
+	          result.isNewRevision
+	            ? `Revision #${result.revisionCount || 2} committed to GitHub!`
+	            : "Committed solution to GitHub!"
+	        );
+	        setTimeout(() => {
+	          btn.disabled = false;
+	          btn.classList.remove("greengrid-status-success");
+	          btn.innerHTML = `
+            <span class="greengrid-btn-icon">＋</span>
+            <span class="greengrid-btn-text">Add to GitHub</span>
+          `;
+	        }, 4000);
+	      });
+	    });
+	  });
+
+	  return wrapper;
+	}
+
+	function injectGitHubButton(adapter) {
+	  const existingWrapper = document.getElementById(BTN_WRAPPER_ID);
+	  const submitBtn = document.querySelector(
+	    'button[data-e2e-locator="console-submit-button"], button[data-cy="submit-code-btn"]'
+	  );
+	  const targetParent = submitBtn?.parentElement || document.querySelector('div[class*="action__"]');
+	  if (!targetParent) return;
+
+	  if (existingWrapper && existingWrapper.isConnected && targetParent.contains(existingWrapper)) {
+	    return;
+	  }
+
+	  if (existingWrapper) {
+	    existingWrapper.remove();
+	  }
+
+	  ensureStyles();
+	  const newWrapper = createGitHubButton(adapter);
+	  if (submitBtn && submitBtn.parentElement === targetParent) {
+	    targetParent.insertBefore(newWrapper, submitBtn);
+	  } else {
+	    targetParent.appendChild(newWrapper);
+	  }
+	}
+
 	function bootstrap() {
 	  const adapter = new LeetCodeAdapter();
 	  adapter.initialize((solution) => {
 	    showSavePrompt(solution);
 	  });
+
+	  ensureStyles();
+	  injectGitHubButton(adapter);
+
+	  let currentPathname = window.location.pathname;
+	  const onLocationCheck = () => {
+	    if (window.location.pathname !== currentPathname) {
+	      currentPathname = window.location.pathname;
+	      injectGitHubButton(adapter);
+	    }
+	  };
+
+	  window.addEventListener("popstate", onLocationCheck);
+
+	  let debounceTimer = null;
+	  const navObserver = new MutationObserver(() => {
+	    onLocationCheck();
+	    if (debounceTimer) window.clearTimeout(debounceTimer);
+	    debounceTimer = window.setTimeout(() => {
+	      injectGitHubButton(adapter);
+	    }, 400);
+	  });
+
+	  navObserver.observe(document.body, { childList: true, subtree: true });
 	}
 	if (document.readyState === "loading") {
 	  document.addEventListener("DOMContentLoaded", bootstrap);

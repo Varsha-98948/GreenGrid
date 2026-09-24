@@ -14,6 +14,7 @@
 import { AcceptedSolution } from '../types/solution';
 import { SaveResult } from '../types/messages';
 import { getAuthState, refreshAccessToken, clearAuthState } from './auth-service';
+import { cleanProblemTitle, normalizeCode } from '../adapters/leetcode-adapter';
 import { logger } from '../utils/logger';
 
 const API_BASE_URL_KEY = 'gg_api_base_url';
@@ -129,9 +130,11 @@ function normalizeLanguage(lang: string): string {
  */
 export async function saveSolution(solution: AcceptedSolution): Promise<SaveResult> {
   const normalizedLang = normalizeLanguage(solution.language);
+  const cleanCode = normalizeCode(solution.code);
+  let cleanTitle = cleanProblemTitle(solution.problemName);
 
   try {
-    // First, try fetching LeetCode metadata for difficulty/topics
+    // First, try fetching LeetCode metadata for difficulty/topics/canonical title
     let difficulty = 'MEDIUM'; // sensible default
     let topics: string[] = [];
 
@@ -146,6 +149,9 @@ export async function saveSolution(solution: AcceptedSolution): Promise<SaveResu
         if (metaBody.data?.found) {
           difficulty = metaBody.data.difficulty || difficulty;
           topics = metaBody.data.topics || [];
+          if (metaBody.data.title && metaBody.data.title.trim().length > 0) {
+            cleanTitle = cleanProblemTitle(metaBody.data.title);
+          }
         }
       }
     } catch (e) {
@@ -155,12 +161,12 @@ export async function saveSolution(solution: AcceptedSolution): Promise<SaveResu
     // Step 1: Try creating the problem
     const createPayload = {
       platform: 'LeetCode',
-      title: solution.problemName,
+      title: cleanTitle,
       problemUrl: solution.problemUrl,
       difficulty,
       topics,
       language: normalizedLang,
-      code: solution.code,
+      code: cleanCode,
       notes: null,
       timeComplexity: null,
       spaceComplexity: null,
@@ -168,9 +174,9 @@ export async function saveSolution(solution: AcceptedSolution): Promise<SaveResu
     };
 
     logger.info('Sending solution to backend', {
-      title: solution.problemName,
+      title: cleanTitle,
       language: normalizedLang,
-      codeLength: solution.code.length,
+      codeLength: cleanCode.length,
     });
 
     const response = await apiRequest('/api/problems', {
@@ -202,7 +208,7 @@ export async function saveSolution(solution: AcceptedSolution): Promise<SaveResu
 
         const revisionPayload = {
           language: normalizedLang,
-          code: solution.code,
+          code: cleanCode,
           notes: null,
           timeComplexity: null,
           spaceComplexity: null,

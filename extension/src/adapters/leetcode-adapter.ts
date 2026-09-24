@@ -23,6 +23,11 @@ export class LeetCodeAdapter implements PlatformAdapter {
   private isAwaitingSubmission = false;
   private submissionTimeout: number | null = null;
   private checkDebounceTimer: number | null = null;
+  private lastAcceptedSolution: AcceptedSolution | null = null;
+
+  public getLastAcceptedSolution(): AcceptedSolution | null {
+    return this.lastAcceptedSolution;
+  }
 
   initialize(onAccepted: (solution: AcceptedSolution) => void): () => void {
     logger.info('Initializing LeetCode adapter');
@@ -168,7 +173,52 @@ export class LeetCodeAdapter implements PlatformAdapter {
       submissionId,
     });
 
+    this.lastAcceptedSolution = solution;
+
     onAccepted(solution);
+  }
+
+  /**
+   * Extract current accepted solution if available on the page or from memory.
+   * Used by the 'Add to GitHub' button.
+   */
+  public extractCurrentAcceptedSolution(): AcceptedSolution | null {
+    const slug = this.extractProblemSlug();
+    if (!slug) return null;
+
+    // 1. If we already recorded an accepted solution for this problem, use it
+    if (this.lastAcceptedSolution && this.lastAcceptedSolution.problemSlug === slug) {
+      return this.lastAcceptedSolution;
+    }
+
+    // 2. Check if page currently displays an accepted submission result
+    const acceptedElement = this.findAcceptedElement();
+    if (!acceptedElement) {
+      return null;
+    }
+
+    // 3. Extract code
+    const code = this.extractCode();
+    if (!code || code.trim().length === 0) {
+      return null;
+    }
+
+    const language = this.extractLanguage();
+    const problemName = this.extractProblemName(slug);
+    const problemUrl = `https://leetcode.com/problems/${slug}/`;
+
+    const solution: AcceptedSolution = {
+      platform: 'LeetCode',
+      problemName,
+      problemUrl,
+      problemSlug: slug,
+      language,
+      code,
+      status: 'accepted',
+    };
+
+    this.lastAcceptedSolution = solution;
+    return solution;
   }
 
   /**
@@ -217,13 +267,8 @@ export class LeetCodeAdapter implements PlatformAdapter {
    * e.g. "238. Product of Array Except Self" -> "Product of Array Except Self"
    * e.g. "Two Sum 1" -> "Two Sum"
    */
-  private cleanProblemTitle(rawTitle: string): string {
-    if (!rawTitle) return '';
-    return rawTitle
-      .replace(/\u00A0/g, ' ')
-      .replace(/^\s*\d+\.\s*/, '')
-      .replace(/\s+\d+$/, '')
-      .trim();
+  public cleanProblemTitle(rawTitle: string): string {
+    return cleanProblemTitle(rawTitle);
   }
 
   /**
@@ -408,7 +453,33 @@ export class LeetCodeAdapter implements PlatformAdapter {
    * Converts Monaco/DOM non-breaking spaces (\u00A0) into standard ASCII spaces (" "),
    * preserving indentation, newlines, tabs, and multiple spaces.
    */
-  private normalizeCode(code: string): string {
-    return code.replace(/\u00A0/g, ' ');
+  public normalizeCode(code: string): string {
+    return normalizeCode(code);
   }
+}
+
+/**
+ * Robust title cleaner that removes leading LeetCode problem numbers (e.g. "1. Two Sum" -> "Two Sum")
+ * and trailing numbers (e.g. "Two Sum 1" -> "Two Sum"), preserving valid titles like "3Sum" and "132 Pattern".
+ */
+export function cleanProblemTitle(rawTitle: string): string {
+  if (!rawTitle) return '';
+  return rawTitle
+    .replace(/\u00A0/g, ' ')
+    .replace(/^\s*\d+\.\s*/, '')
+    .replace(/\s+\d+$/, '')
+    .trim();
+}
+
+/**
+ * Normalizes code extracted from LeetCode / Monaco Editor DOM.
+ * Converts Unicode non-breaking spaces (\u00A0) into standard ASCII spaces (" ")
+ * while preserving newlines, tabs, indentation, and multiple spaces.
+ * Also strips invisible zero-width spaces (\u200B, \uFEFF) injected by Monaco.
+ */
+export function normalizeCode(rawCode: string): string {
+  if (!rawCode) return '';
+  return rawCode
+    .replace(/\u00A0/g, ' ')
+    .replace(/[\u200B\uFEFF]/g, '');
 }
