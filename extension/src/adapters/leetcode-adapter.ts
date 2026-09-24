@@ -180,23 +180,27 @@ export class LeetCodeAdapter implements PlatformAdapter {
   }
 
   /**
-   * Extract human-readable problem name
+   * Extract human-readable problem name without problem numbers
    */
   private extractProblemName(slug: string): string {
     // 1. Try DOM title elements
     const titleElem = document.querySelector(
       'div[data-cy="question-title"], .text-title-large, [class*="question-title"], a[href^="/problems/"][class*="title"]'
     );
-    if (titleElem && titleElem.textContent) {
-      const text = titleElem.textContent.trim();
-      if (text.length > 0) return text;
+    if (titleElem) {
+      // Prefer inner problem link if present, or title element text
+      const link = titleElem.matches('a') ? titleElem : titleElem.querySelector('a[href*="/problems/"]');
+      const candidateText = link?.textContent || titleElem.textContent || '';
+      const clean = this.cleanProblemTitle(candidateText);
+      if (clean.length > 0) return clean;
     }
 
-    // 2. Try document title
+    // 2. Try document title (e.g. "1. Two Sum - LeetCode")
     const docTitle = document.title;
-    if (docTitle && docTitle.includes('LeetCode')) {
-      const clean = docTitle.replace(/-?\s*LeetCode.*$/i, '').trim();
-      if (clean.length > 0) return clean;
+    if (docTitle) {
+      const titleWithoutSite = docTitle.replace(/-?\s*LeetCode.*$/i, '').trim();
+      const clean = this.cleanProblemTitle(titleWithoutSite);
+      if (clean.length > 0 && clean.toLowerCase() !== 'leetcode') return clean;
     }
 
     // 3. Fallback: format slug (e.g. 'two-sum' -> 'Two Sum')
@@ -204,6 +208,22 @@ export class LeetCodeAdapter implements PlatformAdapter {
       .split('-')
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
+  }
+
+  /**
+   * Clean problem title by removing leading or trailing problem numbers and NBSP.
+   * e.g. "1. Two Sum" -> "Two Sum"
+   * e.g. "49. Group Anagrams" -> "Group Anagrams"
+   * e.g. "238. Product of Array Except Self" -> "Product of Array Except Self"
+   * e.g. "Two Sum 1" -> "Two Sum"
+   */
+  private cleanProblemTitle(rawTitle: string): string {
+    if (!rawTitle) return '';
+    return rawTitle
+      .replace(/\u00A0/g, ' ')
+      .replace(/^\s*\d+\.\s*/, '')
+      .replace(/\s+\d+$/, '')
+      .trim();
   }
 
   /**
@@ -330,44 +350,65 @@ export class LeetCodeAdapter implements PlatformAdapter {
    * Extract actual submitted code
    */
   private extractCode(): string {
+    let rawCode = '';
+
     // Strategy 1: Submission detail view / code block if open
     const submissionCodeBlock = document.querySelector(
       'div[class*="submission-detail"] pre code, div[class*="submission"] pre, pre[class*="code"]'
     );
     if (submissionCodeBlock && submissionCodeBlock.textContent) {
-      const code = submissionCodeBlock.textContent.trim();
-      if (code.length > 0) {
+      const code = submissionCodeBlock.textContent;
+      if (code.trim().length > 0) {
         logger.debug('Extracted code from submission pre/code element');
-        return code;
+        rawCode = code;
       }
     }
 
     // Strategy 2: Extract from Monaco Editor lines (.view-lines)
-    const monacoLines = document.querySelectorAll('.monaco-editor .view-lines .view-line');
-    if (monacoLines.length > 0) {
-      const lines: string[] = [];
-      monacoLines.forEach((line) => {
-        // HTMLElement.innerText preserves spacing and empty lines better than textContent
-        const text = (line as HTMLElement).innerText ?? line.textContent ?? '';
-        lines.push(text);
-      });
-      const code = lines.join('\n');
-      if (code.trim().length > 0) {
-        logger.debug('Extracted code from Monaco editor .view-lines', { lineCount: lines.length });
-        return code;
+    if (!rawCode) {
+      const monacoLines = document.querySelectorAll('.monaco-editor .view-lines .view-line');
+      if (monacoLines.length > 0) {
+        const lines: string[] = [];
+        monacoLines.forEach((line) => {
+          // HTMLElement.innerText preserves spacing and empty lines better than textContent
+          const text = (line as HTMLElement).innerText ?? line.textContent ?? '';
+          lines.push(text);
+        });
+        const code = lines.join('\n');
+        if (code.trim().length > 0) {
+          logger.debug('Extracted code from Monaco editor .view-lines', { lineCount: lines.length });
+          rawCode = code;
+        }
       }
     }
 
     // Strategy 3: Check Monaco editor inputarea or container
-    const monacoEditor = document.querySelector('.monaco-editor');
-    if (monacoEditor) {
-      const text = (monacoEditor as HTMLElement).innerText;
-      if (text && text.trim().length > 0) {
-        logger.debug('Extracted code from Monaco editor innerText');
-        return text;
+    if (!rawCode) {
+      const monacoEditor = document.querySelector('.monaco-editor');
+      if (monacoEditor) {
+        const text = (monacoEditor as HTMLElement).innerText;
+        if (text && text.trim().length > 0) {
+          logger.debug('Extracted code from Monaco editor innerText');
+          rawCode = text;
+        }
       }
     }
 
-    return '';
+    if (!rawCode || rawCode.trim().length === 0) {
+      return '';
+    }
+
+    // Normalize: Convert all non-breaking spaces (\u00A0) introduced by LeetCode/Monaco DOM into normal ASCII spaces (" "),
+    // preserving indentation, newlines, tabs, and multiple spaces.
+    return this.normalizeCode(rawCode);
+  }
+
+  /**
+   * Normalize code extracted from LeetCode DOM.
+   * Converts Monaco/DOM non-breaking spaces (\u00A0) into standard ASCII spaces (" "),
+   * preserving indentation, newlines, tabs, and multiple spaces.
+   */
+  private normalizeCode(code: string): string {
+    return code.replace(/\u00A0/g, ' ');
   }
 }
